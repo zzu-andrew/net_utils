@@ -6,7 +6,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"image/color"
 	"strconv"
 	"time"
 )
@@ -87,17 +86,17 @@ func formatData(date *time.Time) string {
 	return date.Format(dateFormat)
 }
 
-func makeTextGrid() *widget.TextGrid {
-	grid := widget.NewTextGrid()
-	grid.SetStyleRange(0, 4, 0, 7,
-		&widget.CustomTextGridStyle{BGColor: &color.NRGBA{R: 64, G: 64, B: 192, A: 128}})
-	grid.SetRowStyle(1, &widget.CustomTextGridStyle{BGColor: &color.NRGBA{R: 64, G: 192, B: 64, A: 128}})
-
-	grid.ShowLineNumbers = true
-	grid.ShowWhitespace = true
-
-	return grid
-}
+//func makeTextGrid() *widget.TextGrid {
+//	grid := widget.NewTextGrid()
+//	grid.SetStyleRange(0, 4, 0, 7,
+//		&widget.CustomTextGridStyle{BGColor: &color.NRGBA{R: 64, G: 64, B: 192, A: 128}})
+//	grid.SetRowStyle(1, &widget.CustomTextGridStyle{BGColor: &color.NRGBA{R: 64, G: 192, B: 64, A: 128}})
+//
+//	grid.ShowLineNumbers = true
+//	grid.ShowWhitespace = true
+//
+//	return grid
+//}
 
 func (a *TaskApp) NewKeyList() *widget.List {
 	list := widget.NewList(
@@ -358,36 +357,36 @@ func (a *TaskApp) NewLeaseDetailShow() *container.Split {
 }
 
 func (a *TaskApp) NewMirrorSplit() *container.Split {
-	var aniScreen1 fyne.CanvasObject
-	aniScreen1, a.Ke.cli[0].ColorBoxAnimation, a.Ke.cli[0].CheckBoxAnimation, a.Ke.cli[0].InOutButton = MakeAnimationScreen()
+	//var aniScreen1 fyne.CanvasObject
+	//aniScreen1, a.Ke.cli[0].ColorBoxAnimation, a.Ke.cli[0].CheckBoxAnimation, a.Ke.cli[0].InOutButton = MakeAnimationScreen()
+	//
+	//var aniScreen2 fyne.CanvasObject
+	//aniScreen2, a.Ke.cli[1].ColorBoxAnimation, a.Ke.cli[1].CheckBoxAnimation, a.Ke.cli[1].InOutButton = MakeAnimationScreen()
 
-	var aniScreen2 fyne.CanvasObject
-	aniScreen2, a.Ke.cli[1].ColorBoxAnimation, a.Ke.cli[1].CheckBoxAnimation, a.Ke.cli[1].InOutButton = MakeAnimationScreen()
-
-	makeMirrorButton := widget.NewButton("Make Mirror", func() {
-
-	})
-
-	radioHost := widget.NewRadioGroup([]string{"Host0", "Host1"}, func(s string) {
-		switch s {
-		case "Host0":
-			a.Ke.clientIndex = 0
-			a.UpdateList()
-			a.details.Refresh()
-		case "Host1":
-			a.Ke.clientIndex = 1
-			a.UpdateList()
-			a.details.Refresh()
-		}
-
-	})
-	radioHost.SetSelected("Host0")
-	radioHost.Horizontal = true
-	makeMirror := container.NewHSplit(makeMirrorButton, radioHost)
-
-	mirrorContainer := container.NewVSplit(makeMirror, container.NewHSplit(aniScreen1, aniScreen2))
-	mirrorContainer.Offset = 1
-	return mirrorContainer
+	//makeMirrorButton := widget.NewButton("Make Mirror", func() {
+	//
+	//})
+	//
+	//radioHost := widget.NewRadioGroup([]string{"Host0", "Host1"}, func(s string) {
+	//	switch s {
+	//	case "Host0":
+	//		a.Ke.clientIndex = 0
+	//		a.UpdateList()
+	//		a.details.Refresh()
+	//	case "Host1":
+	//		a.Ke.clientIndex = 1
+	//		a.UpdateList()
+	//		a.details.Refresh()
+	//	}
+	//
+	//})
+	//radioHost.SetSelected("Host0")
+	//radioHost.Horizontal = true
+	//makeMirror := container.NewHSplit(makeMirrorButton, radioHost)
+	//
+	//mirrorContainer := container.NewVSplit(makeMirror, container.NewHSplit(aniScreen1, aniScreen2))
+	//mirrorContainer.Offset = 1
+	return nil
 }
 
 func (a *TaskApp) MakeUI() fyne.CanvasObject {
