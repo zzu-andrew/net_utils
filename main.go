@@ -13,20 +13,21 @@ import (
 
 // 创建一个net utils的界面
 func main() {
+	// 参数解析
 	flag.Parse()
 	// 最后将日志进行更新
 	defer glog.Flush()
-	// 构造界面
+	// 创建app对象
 	edit := &window.Edit{
 		App: app.NewWithID("net utils"),
 	}
 	// 设置程序图标
-	edit.App.SetIcon(resources.KeeperShotIconPng)
+	edit.App.SetIcon(resources.ShotIconPng)
+	// 更换主题，这样能支持中文？ 根据需要放开
 	edit.App.Settings().SetTheme(&theme.Fzltch{RefThemeApp: edit.App,
-		FontSizeName: "KeeperEtcdTheme"})
-
+		FontSizeName: "EtcdTheme"})
+	// 创建主窗口，改窗户上完成所有工作
 	edit.Win = edit.App.NewWindow("net utils")
-
 	// 创建命令行菜单
 	edit.Win.SetMainMenu(edit.MakeNewMenu())
 	// 注册快捷键

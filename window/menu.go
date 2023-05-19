@@ -29,7 +29,7 @@ type KVConfig struct {
 	v string
 }
 
-// Edit 不和应用绑定的窗口都放到KeeperEdit里面
+// Edit 不和应用绑定的窗口都放到Edit里面
 type Edit struct {
 	App             fyne.App
 	Win             fyne.Window // 顶层窗口
@@ -202,11 +202,6 @@ func (ke *Edit) MakeNewMenu() *fyne.MainMenu {
 		ke.CopyImageToClip()
 	})
 
-	leaseItem := fyne.NewMenuItem("Lease", func() {
-		// 该窗口支持剪贴赋值
-		ke.LeaseMngForm()
-	})
-
 	copyJson := fyne.NewMenuItem("CopyJson", func() {
 		// 该窗口支持剪贴赋值
 		if ke.Tasks.current != nil {
@@ -214,22 +209,23 @@ func (ke *Edit) MakeNewMenu() *fyne.MainMenu {
 			if err != nil {
 				return
 			}
-			ke.Win.Clipboard().SetContent(string(marshal))
+			//ke.Win.Clipboard().SetContent(string(marshal))
+			clipboard.CopyText(string(marshal))
 		}
 	})
-
-	conectUsItem := fyne.NewMenuItem("Contact US", func() {
+	// 联系我们
+	connectUsItem := fyne.NewMenuItem("Contact US", func() {
 		ke.ConnectUsPage()
 	})
 
-	conectUsItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyH, Modifier: fyne.KeyModifierControl}
+	connectUsItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyH, Modifier: fyne.KeyModifierControl}
 	helpMenu := fyne.NewMenu("Help",
 		fyne.NewMenuItem("Doc", func() {
 			u, _ := url.Parse("https://gitee.com/andrewgithub/EtcdKeeperFyne/tree/master")
 			_ = ke.App.OpenURL(u)
 		}),
 		fyne.NewMenuItem("Git Store", func() {
-			u, _ := url.Parse("https://gitee.com/andrewgithub/EtcdKeeperFyne/tree/master")
+			u, _ := url.Parse("https://github.com/zzu-andrew/net_utils")
 			//Open a URL in the default browser application.
 			_ = ke.App.OpenURL(u)
 		}),
@@ -238,7 +234,7 @@ func (ke *Edit) MakeNewMenu() *fyne.MainMenu {
 			ke.showShortcutsPage()
 		}),
 		fyne.NewMenuItemSeparator(),
-		conectUsItem,
+		connectUsItem,
 	)
 
 	host := fyne.NewMenuItem("Host", func() {
@@ -246,7 +242,7 @@ func (ke *Edit) MakeNewMenu() *fyne.MainMenu {
 	})
 
 	mirror := fyne.NewMenuItem("Theme", func() {
-		w := ke.App.NewWindow("Keeper Edit Settings")
+		w := ke.App.NewWindow("Edit Settings")
 		// creates a new settings screen to handle appearance configuration
 		w.SetContent(settings.NewSettings().LoadAppearanceScreen(w))
 		w.Resize(fyne.NewSize(480, 480))
@@ -256,7 +252,7 @@ func (ke *Edit) MakeNewMenu() *fyne.MainMenu {
 
 	mainMenu := fyne.NewMainMenu(
 		fyne.NewMenu("Etcd", host, mirror),
-		fyne.NewMenu("Edit", copyImage, leaseItem, fyne.NewMenuItemSeparator(), copyJson),
+		fyne.NewMenu("Edit", copyImage, fyne.NewMenuItemSeparator(), copyJson),
 		helpMenu)
 	//adds a top level menu to this window.
 	return mainMenu
@@ -283,6 +279,7 @@ func (ke *Edit) ConnectUsPage() {
 	ke.connectUsDialog.Show()
 }
 
+// CopyImageToClip 将主窗口的画布转换成Image，并复制到剪贴板
 func (ke *Edit) CopyImageToClip() {
 	err := clipboard.CopyImage(ke.Win.Canvas().Capture())
 	if err != nil {

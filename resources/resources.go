@@ -9,7 +9,7 @@ import (
 
 //go:embed fire.png
 var embedIconPng []byte
-var KeeperShotIconPng = fyne.NewStaticResource("KeeperShotIconPng", embedIconPng)
+var ShotIconPng = fyne.NewStaticResource("ShotIconPng", embedIconPng)
 
 //go:embed weixin.png
 var weixinIconPng []byte //
