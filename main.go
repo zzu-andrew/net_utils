@@ -1,8 +1,8 @@
-// Package main provides various examples of Fyne API capabilities.
 package main
 
 import (
 	"fmt"
+	"github.com/zzu-andrew/net_utils/resources"
 	"github.com/zzu-andrew/net_utils/window"
 	"net/url"
 
@@ -26,8 +26,8 @@ func shortcutFocused(s fyne.Shortcut, w fyne.Window) {
 }
 
 func main() {
-	a := app.NewWithID("io.fyne.demo")
-	a.SetIcon(theme.FyneLogo())
+	a := app.NewWithID("net utils")
+	a.SetIcon(resources.ShotIconPng)
 	w := a.NewWindow("Fyne Demo")
 	topWindow = w
 
@@ -165,7 +165,7 @@ func makeNav(setTutorial func(tutorial window.Tutorial), loadPrevious bool) fyne
 		tree.Select(currentPref)
 	}
 
-	themes := fyne.NewContainerWithLayout(layout.NewGridLayout(2),
+	themes := container.New(layout.NewGridLayout(2),
 		widget.NewButton("Dark", func() {
 			a.Settings().SetTheme(theme.DarkTheme())
 		}),
