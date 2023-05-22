@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/zzu-andrew/net_utils/network"
 	"github.com/zzu-andrew/net_utils/resources"
@@ -29,11 +30,17 @@ func shortcutFocused(s fyne.Shortcut, w fyne.Window) {
 func main() {
 
 	//flag.Parse()
-	network.HttpStat()
+	httpStat := network.HttpStat("https://www.baidu.com")
 
-	a := app.NewWithID("net utils")
-	a.SetIcon(resources.ShotIconPng)
-	w := a.NewWindow("Fyne Demo")
+	b, _ := json.Marshal(httpStat)
+	fmt.Println(string(b))
+
+	netUtils := window.NetUtils{
+		App: app.NewWithID("net utils"),
+	}
+
+	netUtils.App.SetIcon(resources.ShotIconPng)
+	w := netUtils.App.NewWindow("Net Utils")
 	topWindow = w
 
 	newItem := fyne.NewMenuItem("New", nil)
@@ -48,7 +55,7 @@ func main() {
 		otherItem,
 	)
 	settingsItem := fyne.NewMenuItem("Settings", func() {
-		w := a.NewWindow("Fyne Settings")
+		w := netUtils.App.NewWindow("Fyne Settings")
 		w.SetContent(settings.NewSettings().LoadAppearanceScreen(w))
 		w.Resize(fyne.NewSize(480, 480))
 		w.Show()
@@ -74,16 +81,16 @@ func main() {
 	helpMenu := fyne.NewMenu("Help",
 		fyne.NewMenuItem("Documentation", func() {
 			u, _ := url.Parse("https://developer.fyne.io")
-			_ = a.OpenURL(u)
+			_ = netUtils.App.OpenURL(u)
 		}),
 		fyne.NewMenuItem("Support", func() {
 			u, _ := url.Parse("https://fyne.io/support/")
-			_ = a.OpenURL(u)
+			_ = netUtils.App.OpenURL(u)
 		}),
 		fyne.NewMenuItemSeparator(),
 		fyne.NewMenuItem("Sponsor", func() {
 			u, _ := url.Parse("https://github.com/sponsors/fyne-io")
-			_ = a.OpenURL(u)
+			_ = netUtils.App.OpenURL(u)
 		}))
 	file := fyne.NewMenu("File", newItem)
 	if !fyne.CurrentDevice().IsMobile() {
@@ -103,16 +110,6 @@ func main() {
 	intro := widget.NewLabel("An introduction would probably go\nhere, as well as a")
 	intro.Wrapping = fyne.TextWrapWord
 	setTutorial := func(t window.Tutorial) {
-		if fyne.CurrentDevice().IsMobile() {
-			child := a.NewWindow(t.Title)
-			topWindow = child
-			child.SetContent(t.View(topWindow))
-			child.Show()
-			child.SetOnClosed(func() {
-				topWindow = w
-			})
-			return
-		}
 
 		title.SetText(t.Title)
 		intro.SetText(t.Intro)
@@ -123,13 +120,11 @@ func main() {
 
 	tutorial := container.NewBorder(
 		container.NewVBox(title, widget.NewSeparator(), intro), nil, nil, nil, content)
-	if fyne.CurrentDevice().IsMobile() {
-		w.SetContent(makeNav(setTutorial, false))
-	} else {
-		split := container.NewHSplit(makeNav(setTutorial, true), tutorial)
-		split.Offset = 0.2
-		w.SetContent(split)
-	}
+
+	split := container.NewHSplit(makeNav(setTutorial, true), tutorial)
+	split.Offset = 0.2
+	w.SetContent(split)
+
 	w.Resize(fyne.NewSize(640, 460))
 	w.ShowAndRun()
 }

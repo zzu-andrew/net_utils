@@ -104,11 +104,51 @@ func grayscale(code color.Attribute) func(string, ...interface{}) string {
 	return color.New(code + 232).SprintfFunc()
 }
 
-func HttpStat() {
+/*
+fmta(t1.Sub(t0)), // dns lookup
+			fmta(t2.Sub(t1)), // tcp connection
+			fmta(t6.Sub(t5)), // tls handshake
+			fmta(t4.Sub(t3)), // server processing
+			fmta(t7.Sub(t4)), // content transfer
+			fmtb(t1.Sub(t0)), // namelookup
+			fmtb(t2.Sub(t0)), // connect
+			fmtb(t3.Sub(t0)), // pretransfer
+			fmtb(t4.Sub(t0)), // starttransfer
+			fmtb(t7.Sub(t0)), // total
+*/
 
-	url := parseURL("https://www.baidu.com")
+type HttpStatInfo struct {
+	Uri              string            `json:"Url"`
+	ConnectedTo      string            `json:"To"`
+	ConnectedVia     string            `json:"Via"`
+	HttpInfo         string            `json:"HttpInfo"`
+	Body             map[string]string `json:"Body"`
+	DnsLookup        string            `json:"DnsLookup"`
+	TcpConnection    string            `json:"TcpConnection"`
+	TlsHandshake     string            `json:"TlsHandshake"`
+	ServerProcessing string            `json:"ServerProcessing"`
+	ContentTransfer  string            `json:"ContentTransfer"`
+	NameLookup       string            `json:"NameLookup"`
+	Connect          string            `json:"Connect"`
+	Pretransfer      string            `json:"Pretransfer"`
+	StartTransfer    string            `json:"StartTransfer"`
+	Total            string            `json:"Total"`
+	BodyDiscarded    string            `json:"BodyDiscarded"`
+}
 
-	visit(url)
+// HttpStat 获取http状态
+func HttpStat(strUri string) HttpStatInfo {
+
+	httpStatInfo := HttpStatInfo{
+		Uri:  strUri,
+		Body: make(map[string]string)}
+
+	// url解析
+	url := parseURL(strUri)
+
+	httpStatInfo.visit(url)
+
+	return httpStatInfo
 }
 
 // readClientCert - helper function to read client certificate
@@ -189,7 +229,7 @@ func dialContext(network string) func(ctx context.Context, network, addr string)
 
 // visit visits a url and times the interaction.
 // If the response is a 30x, visit follows the redirect.
-func visit(url *url.URL) {
+func (httpStatInfo *HttpStatInfo) visit(url *url.URL) {
 	req := newRequest(httpMethod, url, postBody)
 
 	var t0, t1, t2, t3, t4, t5, t6 time.Time
@@ -209,7 +249,8 @@ func visit(url *url.URL) {
 			}
 			t2 = time.Now()
 
-			printf("\n%s%s\n", color.GreenString("Connected to "), color.CyanString(addr))
+			httpStatInfo.ConnectedTo = addr
+			printf("\n%s%s\n", color.GreenString("Connected to "), httpStatInfo.ConnectedTo)
 		},
 		GotConn:              func(_ httptrace.GotConnInfo) { t3 = time.Now() },
 		GotFirstResponseByte: func() { t4 = time.Now() },
@@ -273,6 +314,8 @@ func visit(url *url.URL) {
 			connectedVia = "TLSv1.3"
 		}
 	}
+
+	httpStatInfo.ConnectedVia = connectedVia
 	printf("\n%s %s\n", color.GreenString("Connected via"), color.CyanString("%s", connectedVia))
 
 	bodyMsg := readResponseBody(req, resp)
@@ -284,6 +327,7 @@ func visit(url *url.URL) {
 		t0 = t1
 	}
 
+	httpStatInfo.HttpInfo = fmt.Sprintf("%s%s%d.%d %s", "HTTP", "/", resp.ProtoMajor, resp.ProtoMinor, resp.Status)
 	// print status line and headers
 	printf("\n%s%s%s\n", color.GreenString("HTTP"), grayscale(14)("/"), color.CyanString("%d.%d %s", resp.ProtoMajor, resp.ProtoMinor, resp.Status))
 
@@ -293,6 +337,7 @@ func visit(url *url.URL) {
 	}
 	sort.Sort(headers(names))
 	for _, k := range names {
+		httpStatInfo.Body[k] = strings.Join(resp.Header[k], ",")
 		printf("%s %s\n", grayscale(14)(k+":"), color.CyanString(strings.Join(resp.Header[k], ",")))
 	}
 
@@ -318,6 +363,16 @@ func visit(url *url.URL) {
 
 	switch url.Scheme {
 	case "https":
+		httpStatInfo.DnsLookup = fmt.Sprintf("%d", t1.Sub(t0))
+		httpStatInfo.TcpConnection = fmt.Sprintf("%d", t2.Sub(t1))    // tcp connection
+		httpStatInfo.TlsHandshake = fmt.Sprintf("%d", t6.Sub(t5))     // tls handshake
+		httpStatInfo.ServerProcessing = fmt.Sprintf("%d", t4.Sub(t3)) // server processing
+		httpStatInfo.ContentTransfer = fmt.Sprintf("%d", t7.Sub(t4))  // content transfer
+		httpStatInfo.NameLookup = fmt.Sprintf("%d", t1.Sub(t0))       // namelookup
+		httpStatInfo.Connect = fmt.Sprintf("%d", t2.Sub(t0))          // connect
+		httpStatInfo.Pretransfer = fmt.Sprintf("%d", t3.Sub(t0))      // pretransfer
+		httpStatInfo.StartTransfer = fmt.Sprintf("%d", t4.Sub(t0))    // starttransfer
+		httpStatInfo.Total = fmt.Sprintf("%d", t7.Sub(t0))            // total
 		printf(colorize(httpsTemplate),
 			fmta(t1.Sub(t0)), // dns lookup
 			fmta(t2.Sub(t1)), // tcp connection
@@ -331,6 +386,16 @@ func visit(url *url.URL) {
 			fmtb(t7.Sub(t0)), // total
 		)
 	case "http":
+		httpStatInfo.DnsLookup = fmt.Sprintf("%d", t1.Sub(t0))        // dns lookup
+		httpStatInfo.TcpConnection = fmt.Sprintf("%d", t3.Sub(t1))    // tcp connection
+		httpStatInfo.ServerProcessing = fmt.Sprintf("%d", t4.Sub(t3)) // server processing
+		httpStatInfo.ContentTransfer = fmt.Sprintf("%d", t7.Sub(t4))  // content transfer
+		httpStatInfo.NameLookup = fmt.Sprintf("%d", t1.Sub(t0))       // namelookup
+		httpStatInfo.Connect = fmt.Sprintf("%d", t3.Sub(t0))          // connect
+		httpStatInfo.Pretransfer = fmt.Sprintf("%d", t3.Sub(t0))      // pretransfer
+		httpStatInfo.StartTransfer = fmt.Sprintf("%d", t4.Sub(t0))    // starttransfer
+		httpStatInfo.Total = fmt.Sprintf("%d", t7.Sub(t0))            // total
+
 		printf(colorize(httpTemplate),
 			fmta(t1.Sub(t0)), // dns lookup
 			fmta(t3.Sub(t1)), // tcp connection
@@ -358,7 +423,7 @@ func visit(url *url.URL) {
 			log.Fatalf("maximum number of redirects (%d) followed", maxRedirects)
 		}
 
-		visit(loc)
+		httpStatInfo.visit(loc)
 	}
 }
 
@@ -425,7 +490,7 @@ func readResponseBody(req *http.Request, resp *http.Response) string {
 		return ""
 	}
 
-	w := ioutil.Discard
+	w := io.Discard
 	msg := color.CyanString("Body discarded")
 
 	if saveOutput || outputFile != "" {

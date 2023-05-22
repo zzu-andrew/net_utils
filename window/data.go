@@ -13,7 +13,8 @@ type Tutorial struct {
 var (
 	// Tutorials defines the metadata for each tutorial
 	Tutorials = map[string]Tutorial{
-		"welcome": {"Welcome", "", welcomeScreen},
+		"HttpStat": {"HttpStat", "", httpStat},
+		"welcome":  {"Welcome", "", welcomeScreen},
 		"canvas": {"Canvas",
 			"See the canvas capabilities.",
 			canvasScreen,
@@ -138,7 +139,7 @@ var (
 
 	// TutorialIndex  defines how our tutorials should be laid out in the index tree
 	TutorialIndex = map[string][]string{
-		"":            {"welcome", "canvas", "animations", "icons", "widgets", "collections", "containers", "dialogs", "window", "binding", "advanced"},
+		"":            {"HttpStat", "welcome", "canvas", "animations", "icons", "widgets", "collections", "containers", "dialogs", "window", "binding", "advanced"},
 		"collections": {"list", "table", "tree"},
 		"containers":  {"apptabs", "border", "box", "center", "grid", "split", "scroll"},
 		"widgets":     {"accordion", "button", "card", "entry", "form", "input", "text", "toolbar", "progress"},

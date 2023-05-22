@@ -11,7 +11,14 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func parseURL(urlStr string) *url.URL {
+/*
+ 1. 每次从新获取uri
+ 2. 解析uri
+ 3. 将uri信息统计输出
+
+*/
+
+func parseURLa(urlStr string) *url.URL {
 	link, err := url.Parse(urlStr)
 	if err != nil {
 		fyne.LogError("Could not parse URL", err)
@@ -20,7 +27,7 @@ func parseURL(urlStr string) *url.URL {
 	return link
 }
 
-func welcomeScreen(_ fyne.Window) fyne.CanvasObject {
+func httpStat(_ fyne.Window) fyne.CanvasObject {
 
 	fmt.Println("==============================")
 
@@ -36,7 +43,7 @@ func welcomeScreen(_ fyne.Window) fyne.CanvasObject {
 		widget.NewLabelWithStyle("Welcome to the Fyne toolkit demo app", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
 		logo,
 		container.NewHBox(
-			widget.NewHyperlink("fyne.io", parseURL("https://fyne.io/")),
+			widget.NewHyperlink("fyne.io", parseURLa("https://fyne.io/")),
 			widget.NewLabel("-"),
 			widget.NewHyperlink("documentation", parseURL("https://fyne.io/develop/")),
 			widget.NewLabel("-"),
