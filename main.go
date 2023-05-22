@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/zzu-andrew/net_utils/network"
 	"github.com/zzu-andrew/net_utils/resources"
 	"github.com/zzu-andrew/net_utils/window"
 	"net/url"
@@ -28,7 +27,8 @@ func shortcutFocused(s fyne.Shortcut, w fyne.Window) {
 
 func main() {
 
-	network.HttpStat()
+	//flag.Parse()
+	//network.HttpStat()
 
 	a := app.NewWithID("net utils")
 	a.SetIcon(resources.ShotIconPng)
