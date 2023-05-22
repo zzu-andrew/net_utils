@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/pem"
-	"flag"
 	"fmt"
 	"github.com/fatih/color"
 	"io"
@@ -17,7 +16,6 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -68,34 +66,35 @@ var (
 
 const maxRedirects = 10
 
-func init() {
-	flag.StringVar(&httpMethod, "X", "GET", "HTTP method to use")
-	flag.StringVar(&postBody, "d", "", "the body of a POST or PUT request; from file use @filename")
-	flag.BoolVar(&followRedirects, "L", false, "follow 30x redirects")
-	flag.BoolVar(&onlyHeader, "I", false, "don't read body of request")
-	flag.BoolVar(&insecure, "k", false, "allow insecure SSL connections")
-	flag.Var(&httpHeaders, "H", "set HTTP header; repeatable: -H 'Accept: ...' -H 'Range: ...'")
-	flag.BoolVar(&saveOutput, "O", false, "save body as remote filename")
-	flag.StringVar(&outputFile, "o", "", "output file for body")
-	flag.BoolVar(&showVersion, "v", false, "print version number")
-	flag.StringVar(&clientCertFile, "E", "", "client cert file for tls config")
-	flag.BoolVar(&fourOnly, "4", false, "resolve IPv4 addresses only")
-	flag.BoolVar(&sixOnly, "6", false, "resolve IPv6 addresses only")
+//
+//func init() {
+//	flag.StringVar(&httpMethod, "X", "GET", "HTTP method to use")
+//	flag.StringVar(&postBody, "d", "", "the body of a POST or PUT request; from file use @filename")
+//	flag.BoolVar(&followRedirects, "L", false, "follow 30x redirects")
+//	flag.BoolVar(&onlyHeader, "I", false, "don't read body of request")
+//	flag.BoolVar(&insecure, "k", false, "allow insecure SSL connections")
+//	flag.Var(&httpHeaders, "H", "set HTTP header; repeatable: -H 'Accept: ...' -H 'Range: ...'")
+//	flag.BoolVar(&saveOutput, "O", false, "save body as remote filename")
+//	flag.StringVar(&outputFile, "o", "", "output file for body")
+//	flag.BoolVar(&showVersion, "v", false, "print version number")
+//	flag.StringVar(&clientCertFile, "E", "", "client cert file for tls config")
+//	flag.BoolVar(&fourOnly, "4", false, "resolve IPv4 addresses only")
+//	flag.BoolVar(&sixOnly, "6", false, "resolve IPv6 addresses only")
+//
+//	flag.Usage = usage
+//}
 
-	flag.Usage = usage
-}
-
-func usage() {
-	fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS] URL\n\n", os.Args[0])
-	fmt.Fprintln(os.Stderr, "OPTIONS:")
-	flag.PrintDefaults()
-	fmt.Fprintln(os.Stderr, "")
-	fmt.Fprintln(os.Stderr, "ENVIRONMENT:")
-	fmt.Fprintln(os.Stderr, "  HTTP_PROXY    proxy for HTTP requests; complete URL or HOST[:PORT]")
-	fmt.Fprintln(os.Stderr, "                used for HTTPS requests if HTTPS_PROXY undefined")
-	fmt.Fprintln(os.Stderr, "  HTTPS_PROXY   proxy for HTTPS requests; complete URL or HOST[:PORT]")
-	fmt.Fprintln(os.Stderr, "  NO_PROXY      comma-separated list of hosts to exclude from proxy")
-}
+//func usage() {
+//	fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS] URL\n\n", os.Args[0])
+//	fmt.Fprintln(os.Stderr, "OPTIONS:")
+//	flag.PrintDefaults()
+//	fmt.Fprintln(os.Stderr, "")
+//	fmt.Fprintln(os.Stderr, "ENVIRONMENT:")
+//	fmt.Fprintln(os.Stderr, "  HTTP_PROXY    proxy for HTTP requests; complete URL or HOST[:PORT]")
+//	fmt.Fprintln(os.Stderr, "                used for HTTPS requests if HTTPS_PROXY undefined")
+//	fmt.Fprintln(os.Stderr, "  HTTPS_PROXY   proxy for HTTPS requests; complete URL or HOST[:PORT]")
+//	fmt.Fprintln(os.Stderr, "  NO_PROXY      comma-separated list of hosts to exclude from proxy")
+//}
 
 func printf(format string, a ...interface{}) (n int, err error) {
 	return fmt.Fprintf(color.Output, format, a...)
@@ -106,24 +105,6 @@ func grayscale(code color.Attribute) func(string, ...interface{}) string {
 }
 
 func HttpStat() {
-
-	if showVersion {
-		fmt.Printf("%s %s (runtime: %s)\n", os.Args[0], version, runtime.Version())
-		os.Exit(0)
-	}
-
-	if fourOnly && sixOnly {
-		fmt.Fprintf(os.Stderr, "%s: Only one of -4 and -6 may be specified\n", os.Args[0])
-		os.Exit(-1)
-	}
-
-	if (httpMethod == "POST" || httpMethod == "PUT") && postBody == "" {
-		log.Fatal("must supply post body using -d when POST or PUT is used")
-	}
-
-	if onlyHeader {
-		httpMethod = "HEAD"
-	}
 
 	url := parseURL("https://www.baidu.com")
 
