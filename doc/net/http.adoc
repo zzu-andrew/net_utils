@@ -1,0 +1,21 @@
+:toc:
+
+:icons: font
+
+// 保证所有的目录层级都可以正常显示图片
+:path: net/
+:imagesdir: ../img/
+:srcdir: ../src
+
+
+// 只有book调用的时候才会走到这里
+ifdef::rootpath[]
+:imagesdir: {rootpath}{path}{imagesdir}
+endif::rootpath[]
+
+ifndef::rootpath[]
+:rootpath: ../
+endif::rootpath[]
+
+
+== Linux命令
