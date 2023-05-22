@@ -20,7 +20,7 @@ func parseURL(urlStr string) *url.URL {
 	return link
 }
 
-func welcomeScreen(_ fyne.Window) fyne.CanvasObject {
+func welcomeScreen(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 
 	fmt.Println("==============================")
 

@@ -18,7 +18,7 @@ func rgbGradient(x, y, w, h int) color.Color {
 }
 
 // canvasScreen loads a graphics example panel for the demo app
-func canvasScreen(_ fyne.Window) fyne.CanvasObject {
+func canvasScreen(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	gradient := canvas.NewHorizontalGradient(color.NRGBA{0x80, 0, 0, 0xff}, color.NRGBA{0, 0x80, 0, 0xff})
 	go func() {
 		for {

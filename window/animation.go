@@ -10,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func makeAnimationScreen(_ fyne.Window) fyne.CanvasObject {
+func makeAnimationScreen(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	curves := makeAnimationCurves()
 	curves.Move(fyne.NewPos(0, 140+theme.Padding()))
 	return fyne.NewContainerWithoutLayout(makeAnimationCanvas(), curves)

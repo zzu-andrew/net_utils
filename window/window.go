@@ -10,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func windowScreen(_ fyne.Window) fyne.CanvasObject {
+func windowScreen(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	windowGroup := container.NewVBox(
 		widget.NewButton("New window", func() {
 			w := fyne.CurrentApp().NewWindow("Hello")

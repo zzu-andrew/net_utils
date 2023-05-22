@@ -12,7 +12,7 @@ import (
 )
 
 // containerScreen loads a tab panel for containers
-func containerScreen(_ fyne.Window) fyne.CanvasObject {
+func containerScreen(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	content := container.NewBorder(
 		widget.NewLabelWithStyle("Top", fyne.TextAlignCenter, fyne.TextStyle{}),
 		widget.NewLabelWithStyle("Bottom", fyne.TextAlignCenter, fyne.TextStyle{}),
@@ -22,7 +22,7 @@ func containerScreen(_ fyne.Window) fyne.CanvasObject {
 	return container.NewCenter(content)
 }
 
-func makeAppTabsTab(_ fyne.Window) fyne.CanvasObject {
+func makeAppTabsTab(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	return container.NewAppTabs(
 		container.NewTabItem("Tab 1", widget.NewLabel("Content of tab 1")),
 		container.NewTabItem("Tab 2 bigger", widget.NewLabel("Content of tab 2")),
@@ -30,7 +30,7 @@ func makeAppTabsTab(_ fyne.Window) fyne.CanvasObject {
 	)
 }
 
-func makeBorderLayout(_ fyne.Window) fyne.CanvasObject {
+func makeBorderLayout(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	top := makeCell()
 	bottom := makeCell()
 	left := makeCell()
@@ -40,7 +40,7 @@ func makeBorderLayout(_ fyne.Window) fyne.CanvasObject {
 	return container.NewBorder(top, bottom, left, right, middle)
 }
 
-func makeBoxLayout(_ fyne.Window) fyne.CanvasObject {
+func makeBoxLayout(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	top := makeCell()
 	bottom := makeCell()
 	middle := widget.NewLabel("BoxLayout")
@@ -70,13 +70,13 @@ func makeCell() fyne.CanvasObject {
 	return rect
 }
 
-func makeCenterLayout(_ fyne.Window) fyne.CanvasObject {
+func makeCenterLayout(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	middle := widget.NewButton("CenterLayout", func() {})
 
 	return container.NewCenter(middle)
 }
 
-func makeGridLayout(_ fyne.Window) fyne.CanvasObject {
+func makeGridLayout(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	box1 := makeCell()
 	box2 := widget.NewLabel("Grid")
 	box3 := makeCell()
@@ -86,7 +86,7 @@ func makeGridLayout(_ fyne.Window) fyne.CanvasObject {
 		box1, box2, box3, box4)
 }
 
-func makeScrollTab(_ fyne.Window) fyne.CanvasObject {
+func makeScrollTab(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	hlist := makeButtonList(20)
 	vlist := makeButtonList(50)
 
@@ -108,7 +108,7 @@ func makeScrollBothTab() fyne.CanvasObject {
 	return scroll
 }
 
-func makeSplitTab(_ fyne.Window) fyne.CanvasObject {
+func makeSplitTab(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	left := widget.NewMultiLineEntry()
 	left.Wrapping = fyne.TextWrapWord
 	left.SetText("Long text is looooooooooooooong")

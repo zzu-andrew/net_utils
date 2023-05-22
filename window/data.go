@@ -7,7 +7,7 @@ import (
 // Tutorial defines the data structure for a tutorial
 type Tutorial struct {
 	Title, Intro string
-	View         func(w fyne.Window) fyne.CanvasObject
+	View         func(netUtils *NetUtils, w fyne.Window) fyne.CanvasObject
 }
 
 var (

@@ -35,7 +35,7 @@ var (
 	endProgress chan interface{}
 )
 
-func makeAccordionTab(_ fyne.Window) fyne.CanvasObject {
+func makeAccordionTab(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	link, err := url.Parse("https://fyne.io/")
 	if err != nil {
 		fyne.LogError("Could not parse URL", err)
@@ -52,7 +52,7 @@ func makeAccordionTab(_ fyne.Window) fyne.CanvasObject {
 	return ac
 }
 
-func makeButtonTab(_ fyne.Window) fyne.CanvasObject {
+func makeButtonTab(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	disabled := widget.NewButton("Disabled", func() {})
 	disabled.Disable()
 
@@ -89,7 +89,7 @@ func makeButtonTab(_ fyne.Window) fyne.CanvasObject {
 	)
 }
 
-func makeCardTab(_ fyne.Window) fyne.CanvasObject {
+func makeCardTab(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	card1 := widget.NewCard("Book a table", "Which time suits?",
 		widget.NewRadioGroup([]string{"6:30pm", "7:00pm", "7:45pm"}, func(string) {}))
 	card2 := widget.NewCard("With media", "No content, with image", nil)
@@ -99,7 +99,7 @@ func makeCardTab(_ fyne.Window) fyne.CanvasObject {
 		container.NewVBox(card2))
 }
 
-func makeEntryTab(_ fyne.Window) fyne.CanvasObject {
+func makeEntryTab(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	entry := widget.NewEntry()
 	entry.SetPlaceHolder("Entry")
 	entryDisabled := widget.NewEntry()
@@ -137,7 +137,7 @@ func makeTextGrid() *widget.TextGrid {
 	return grid
 }
 
-func makeTextTab(_ fyne.Window) fyne.CanvasObject {
+func makeTextTab(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	label := widget.NewLabel("Label")
 
 	link, err := url.Parse("https://fyne.io/")
@@ -213,7 +213,7 @@ func makeTextTab(_ fyne.Window) fyne.CanvasObject {
 		fixed, entryLoremIpsum, grid)
 }
 
-func makeInputTab(_ fyne.Window) fyne.CanvasObject {
+func makeInputTab(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	selectEntry := widget.NewSelectEntry([]string{"Option A", "Option B", "Option C"})
 	selectEntry.PlaceHolder = "Type or select"
 	disabledCheck := widget.NewCheck("Disabled check", func(bool) {})
@@ -234,7 +234,7 @@ func makeInputTab(_ fyne.Window) fyne.CanvasObject {
 	)
 }
 
-func makeProgressTab(_ fyne.Window) fyne.CanvasObject {
+func makeProgressTab(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	stopProgress()
 
 	progress = widget.NewProgressBar()
@@ -254,7 +254,7 @@ func makeProgressTab(_ fyne.Window) fyne.CanvasObject {
 		widget.NewLabel("Infinite"), infProgress)
 }
 
-func makeFormTab(_ fyne.Window) fyne.CanvasObject {
+func makeFormTab(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	name := widget.NewEntry()
 	name.SetPlaceHolder("John Smith")
 
@@ -288,7 +288,7 @@ func makeFormTab(_ fyne.Window) fyne.CanvasObject {
 	return form
 }
 
-func makeToolbarTab(_ fyne.Window) fyne.CanvasObject {
+func makeToolbarTab(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	t := widget.NewToolbar(widget.NewToolbarAction(theme.MailComposeIcon(), func() { fmt.Println("New") }),
 		widget.NewToolbarSeparator(),
 		widget.NewToolbarSpacer(),
@@ -343,7 +343,7 @@ func stopProgress() {
 }
 
 // widgetScreen shows a panel containing widget demos
-func widgetScreen(_ fyne.Window) fyne.CanvasObject {
+func widgetScreen(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	content := container.NewVBox(
 		widget.NewLabel("Labels"),
 		widget.NewButtonWithIcon("Icons", theme.HomeIcon(), func() {}),

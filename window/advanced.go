@@ -29,7 +29,7 @@ func setScaleText(obj *widget.Label, win fyne.Window) {
 
 // advancedScreen loads a panel that shows details and settings that are a bit
 // more detailed than normally needed.
-func advancedScreen(win fyne.Window) fyne.CanvasObject {
+func advancedScreen(netUtils *NetUtils, win fyne.Window) fyne.CanvasObject {
 	scale := widget.NewLabel("")
 
 	screen := widget.NewCard("Screen info", "", widget.NewForm(

@@ -35,7 +35,7 @@ func main() {
 	b, _ := json.Marshal(httpStat)
 	fmt.Println(string(b))
 
-	netUtils := window.NetUtils{
+	netUtils := &window.NetUtils{
 		App: app.NewWithID("net utils"),
 	}
 
@@ -114,7 +114,7 @@ func main() {
 		title.SetText(t.Title)
 		intro.SetText(t.Intro)
 
-		content.Objects = []fyne.CanvasObject{t.View(w)}
+		content.Objects = []fyne.CanvasObject{t.View(netUtils, w)}
 		content.Refresh()
 	}
 

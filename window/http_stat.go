@@ -18,6 +18,9 @@ import (
 
 */
 
+type HttpInfo struct {
+}
+
 func parseURLa(urlStr string) *url.URL {
 	link, err := url.Parse(urlStr)
 	if err != nil {
@@ -27,7 +30,7 @@ func parseURLa(urlStr string) *url.URL {
 	return link
 }
 
-func httpStat(_ fyne.Window) fyne.CanvasObject {
+func httpStat(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 
 	fmt.Println("==============================")
 
