@@ -1,9 +1,7 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/zzu-andrew/net_utils/network"
 	"github.com/zzu-andrew/net_utils/resources"
 	"github.com/zzu-andrew/net_utils/window"
 	"net/url"
@@ -28,12 +26,6 @@ func shortcutFocused(s fyne.Shortcut, w fyne.Window) {
 }
 
 func main() {
-
-	//flag.Parse()
-	httpStat := network.HttpStat("https://www.baidu.com")
-
-	b, _ := json.Marshal(httpStat)
-	fmt.Println(string(b))
 
 	netUtils := &window.NetUtils{
 		App: app.NewWithID("net utils"),

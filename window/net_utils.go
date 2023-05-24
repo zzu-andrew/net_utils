@@ -6,5 +6,6 @@ type UtilsData struct {
 }
 
 type NetUtils struct {
-	App fyne.App
+	App         fyne.App
+	httpStatObj fyne.CanvasObject
 }
