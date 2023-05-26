@@ -1,8 +1,6 @@
 package window
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/zzu-andrew/net_utils/network"
 	"net/url"
 
@@ -60,34 +58,78 @@ func httpStat(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 		return netUtils.httpStatObj
 	}
 
-	//flag.Parse()
-	httpStat := network.HttpStat("https://www.baidu.com")
+	uriWidget := widget.NewLabel("")
+	ConnectedToWidget := widget.NewLabel("")
 
-	b, _ := json.Marshal(httpStat)
-	fmt.Println(string(b))
-	fmt.Println("==============================")
-
-	uri := widget.NewLabel("")
-	uri.SetText("")
-
-	button := widget.NewButton("Conn", func() {
-
-	})
+	ConnectedViaWidget := widget.NewLabel("")
+	HttpInfoWidget := widget.NewLabel("")
+	//BodyWidget := widget.NewLabel("")
+	DnsLookupWidget := widget.NewLabel("")
+	TcpConnectionWidget := widget.NewLabel("")
+	TlsHandshakeWidget := widget.NewLabel("")
+	ServerProcessingWidget := widget.NewLabel("")
+	ContentTransferWidget := widget.NewLabel("")
+	NameLookupWidget := widget.NewLabel("")
+	ConnectWidget := widget.NewLabel("")
+	PretransferWidget := widget.NewLabel("")
+	StartTransferWidget := widget.NewLabel("")
+	TotalWidget := widget.NewLabel("")
+	BodyDiscardedWidget := widget.NewLabel("")
 
 	entryUri := widget.NewEntry()
+	entryUri.SetPlaceHolder("https://www.baidu.com")
 
-	netUtils.httpStatObj = container.NewPadded(container.NewVSplit(
-		container.NewHSplit(entryUri, button),
+	button := widget.NewButton("Conn", func() {
+		uri := entryUri.Text
+
+		if len(uri) == 0 {
+			return
+		}
+
+		httpStat := network.HttpStat(uri)
+		uriWidget.SetText(httpStat.Uri)
+		ConnectedToWidget.SetText(httpStat.Uri)
+		ConnectedViaWidget.SetText(httpStat.ConnectedVia)
+		HttpInfoWidget.SetText(httpStat.HttpInfo)
+		//BodyWidget.SetText(httpStat.Body)
+		DnsLookupWidget.SetText(httpStat.DnsLookup)
+		TcpConnectionWidget.SetText(httpStat.TcpConnection)
+		TlsHandshakeWidget.SetText(httpStat.TlsHandshake)
+		ServerProcessingWidget.SetText(httpStat.ServerProcessing)
+		ContentTransferWidget.SetText(httpStat.ContentTransfer)
+		NameLookupWidget.SetText(httpStat.NameLookup)
+		ConnectWidget.SetText(httpStat.Connect)
+		PretransferWidget.SetText(httpStat.Pretransfer)
+		StartTransferWidget.SetText(httpStat.StartTransfer)
+		TotalWidget.SetText(httpStat.Total)
+		BodyDiscardedWidget.SetText(httpStat.BodyDiscarded)
+
+	})
+	connectTool := container.NewHSplit(entryUri, button)
+	// button 设置为最小
+	connectTool.SetOffset(1.0)
+	httpStatPadd := container.NewVSplit(
+		connectTool,
 		widget.NewForm(
-			widget.NewFormItem("Uri : ", uri),
-			widget.NewFormItem("ConnectedTo : ", uri),
-			widget.NewFormItem("ConnectedVia : ", uri),
-			widget.NewFormItem("HttpInfo : ", uri),
-			widget.NewFormItem("DnsLookup : ", uri),
-			widget.NewFormItem("TcpConnection : ", uri),
-			widget.NewFormItem("Due : ", uri),
-			widget.NewFormItem("UpdateValue : ", uri),
-		)))
+			widget.NewFormItem("Uri : ", uriWidget),
+			widget.NewFormItem("ConnectedTo : ", ConnectedToWidget),
+			widget.NewFormItem("ConnectedVia : ", ConnectedViaWidget),
+			widget.NewFormItem("HttpInfo : ", HttpInfoWidget),
+			widget.NewFormItem("DnsLookup(ms) : ", DnsLookupWidget),
+			widget.NewFormItem("TcpConnection(ms) : ", TcpConnectionWidget),
+			widget.NewFormItem("TlsHandshake(ms) : ", TlsHandshakeWidget),
+			widget.NewFormItem("ServerProcessing(ms) : ", ServerProcessingWidget),
+			widget.NewFormItem("ContentTransfer(ms) : ", ContentTransferWidget),
+			widget.NewFormItem("NameLookup(ms) : ", NameLookupWidget),
+			widget.NewFormItem("Connect(ms) : ", ConnectWidget),
+			widget.NewFormItem("Pretransfer(ms) : ", PretransferWidget),
+			widget.NewFormItem("StartTransfer(ms) : ", StartTransferWidget),
+			widget.NewFormItem("Total(ms) : ", TotalWidget),
+			widget.NewFormItem("BodyDiscarded : ", BodyDiscardedWidget),
+		))
+	httpStatPadd.SetOffset(0.0)
+
+	netUtils.httpStatObj = container.NewPadded(httpStatPadd)
 
 	return netUtils.httpStatObj
 }

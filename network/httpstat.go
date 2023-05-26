@@ -66,36 +66,6 @@ var (
 
 const maxRedirects = 10
 
-//
-//func init() {
-//	flag.StringVar(&httpMethod, "X", "GET", "HTTP method to use")
-//	flag.StringVar(&postBody, "d", "", "the body of a POST or PUT request; from file use @filename")
-//	flag.BoolVar(&followRedirects, "L", false, "follow 30x redirects")
-//	flag.BoolVar(&onlyHeader, "I", false, "don't read body of request")
-//	flag.BoolVar(&insecure, "k", false, "allow insecure SSL connections")
-//	flag.Var(&httpHeaders, "H", "set HTTP header; repeatable: -H 'Accept: ...' -H 'Range: ...'")
-//	flag.BoolVar(&saveOutput, "O", false, "save body as remote filename")
-//	flag.StringVar(&outputFile, "o", "", "output file for body")
-//	flag.BoolVar(&showVersion, "v", false, "print version number")
-//	flag.StringVar(&clientCertFile, "E", "", "client cert file for tls config")
-//	flag.BoolVar(&fourOnly, "4", false, "resolve IPv4 addresses only")
-//	flag.BoolVar(&sixOnly, "6", false, "resolve IPv6 addresses only")
-//
-//	flag.Usage = usage
-//}
-
-//func usage() {
-//	fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS] URL\n\n", os.Args[0])
-//	fmt.Fprintln(os.Stderr, "OPTIONS:")
-//	flag.PrintDefaults()
-//	fmt.Fprintln(os.Stderr, "")
-//	fmt.Fprintln(os.Stderr, "ENVIRONMENT:")
-//	fmt.Fprintln(os.Stderr, "  HTTP_PROXY    proxy for HTTP requests; complete URL or HOST[:PORT]")
-//	fmt.Fprintln(os.Stderr, "                used for HTTPS requests if HTTPS_PROXY undefined")
-//	fmt.Fprintln(os.Stderr, "  HTTPS_PROXY   proxy for HTTPS requests; complete URL or HOST[:PORT]")
-//	fmt.Fprintln(os.Stderr, "  NO_PROXY      comma-separated list of hosts to exclude from proxy")
-//}
-
 func printf(format string, a ...interface{}) (n int, err error) {
 	return fmt.Fprintf(color.Output, format, a...)
 }
@@ -257,7 +227,9 @@ func (httpStatInfo *HttpStatInfo) visit(url *url.URL) {
 		TLSHandshakeStart:    func() { t5 = time.Now() },
 		TLSHandshakeDone:     func(_ tls.ConnectionState, _ error) { t6 = time.Now() },
 	}
-	req = req.WithContext(httptrace.WithClientTrace(context.Background(), trace))
+
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*10)
+	req = req.WithContext(httptrace.WithClientTrace(ctx, trace))
 
 	tr := &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
@@ -353,6 +325,9 @@ func (httpStatInfo *HttpStatInfo) visit(url *url.URL) {
 		return color.CyanString("%-9s", strconv.Itoa(int(d/time.Millisecond))+"ms")
 	}
 
+	fmtTime := func(d time.Duration) int {
+		return int(d / time.Millisecond)
+	}
 	colorize := func(s string) string {
 		v := strings.Split(s, "\n")
 		v[0] = grayscale(16)(v[0])
@@ -363,16 +338,16 @@ func (httpStatInfo *HttpStatInfo) visit(url *url.URL) {
 
 	switch url.Scheme {
 	case "https":
-		httpStatInfo.DnsLookup = fmt.Sprintf("%d", t1.Sub(t0))
-		httpStatInfo.TcpConnection = fmt.Sprintf("%d", t2.Sub(t1))    // tcp connection
-		httpStatInfo.TlsHandshake = fmt.Sprintf("%d", t6.Sub(t5))     // tls handshake
-		httpStatInfo.ServerProcessing = fmt.Sprintf("%d", t4.Sub(t3)) // server processing
-		httpStatInfo.ContentTransfer = fmt.Sprintf("%d", t7.Sub(t4))  // content transfer
-		httpStatInfo.NameLookup = fmt.Sprintf("%d", t1.Sub(t0))       // namelookup
-		httpStatInfo.Connect = fmt.Sprintf("%d", t2.Sub(t0))          // connect
-		httpStatInfo.Pretransfer = fmt.Sprintf("%d", t3.Sub(t0))      // pretransfer
-		httpStatInfo.StartTransfer = fmt.Sprintf("%d", t4.Sub(t0))    // starttransfer
-		httpStatInfo.Total = fmt.Sprintf("%d", t7.Sub(t0))            // total
+		httpStatInfo.DnsLookup = fmt.Sprintf("%d", fmtTime(t1.Sub(t0)))
+		httpStatInfo.TcpConnection = fmt.Sprintf("%d", fmtTime(t2.Sub(t1)))    // tcp connection
+		httpStatInfo.TlsHandshake = fmt.Sprintf("%d", fmtTime(t6.Sub(t5)))     // tls handshake
+		httpStatInfo.ServerProcessing = fmt.Sprintf("%d", fmtTime(t4.Sub(t3))) // server processing
+		httpStatInfo.ContentTransfer = fmt.Sprintf("%d", fmtTime(t7.Sub(t4)))  // content transfer
+		httpStatInfo.NameLookup = fmt.Sprintf("%d", fmtTime(t1.Sub(t0)))       // namelookup
+		httpStatInfo.Connect = fmt.Sprintf("%d", fmtTime(t2.Sub(t0)))          // connect
+		httpStatInfo.Pretransfer = fmt.Sprintf("%d", fmtTime(t3.Sub(t0)))      // pretransfer
+		httpStatInfo.StartTransfer = fmt.Sprintf("%d", fmtTime(t4.Sub(t0)))    // starttransfer
+		httpStatInfo.Total = fmt.Sprintf("%d", fmtTime(t7.Sub(t0)))            // total
 		printf(colorize(httpsTemplate),
 			fmta(t1.Sub(t0)), // dns lookup
 			fmta(t2.Sub(t1)), // tcp connection
@@ -386,15 +361,15 @@ func (httpStatInfo *HttpStatInfo) visit(url *url.URL) {
 			fmtb(t7.Sub(t0)), // total
 		)
 	case "http":
-		httpStatInfo.DnsLookup = fmt.Sprintf("%d", t1.Sub(t0))        // dns lookup
-		httpStatInfo.TcpConnection = fmt.Sprintf("%d", t3.Sub(t1))    // tcp connection
-		httpStatInfo.ServerProcessing = fmt.Sprintf("%d", t4.Sub(t3)) // server processing
-		httpStatInfo.ContentTransfer = fmt.Sprintf("%d", t7.Sub(t4))  // content transfer
-		httpStatInfo.NameLookup = fmt.Sprintf("%d", t1.Sub(t0))       // namelookup
-		httpStatInfo.Connect = fmt.Sprintf("%d", t3.Sub(t0))          // connect
-		httpStatInfo.Pretransfer = fmt.Sprintf("%d", t3.Sub(t0))      // pretransfer
-		httpStatInfo.StartTransfer = fmt.Sprintf("%d", t4.Sub(t0))    // starttransfer
-		httpStatInfo.Total = fmt.Sprintf("%d", t7.Sub(t0))            // total
+		httpStatInfo.DnsLookup = fmt.Sprintf("%d", fmtTime(t1.Sub(t0)))        // dns lookup
+		httpStatInfo.TcpConnection = fmt.Sprintf("%d", fmtTime(t3.Sub(t1)))    // tcp connection
+		httpStatInfo.ServerProcessing = fmt.Sprintf("%d", fmtTime(t4.Sub(t3))) // server processing
+		httpStatInfo.ContentTransfer = fmt.Sprintf("%d", fmtTime(t7.Sub(t4)))  // content transfer
+		httpStatInfo.NameLookup = fmt.Sprintf("%d", fmtTime(t1.Sub(t0)))       // namelookup
+		httpStatInfo.Connect = fmt.Sprintf("%d", fmtTime(t3.Sub(t0)))          // connect
+		httpStatInfo.Pretransfer = fmt.Sprintf("%d", fmtTime(t3.Sub(t0)))      // pretransfer
+		httpStatInfo.StartTransfer = fmt.Sprintf("%d", fmtTime(t4.Sub(t0)))    // starttransfer
+		httpStatInfo.Total = fmt.Sprintf("%d", fmtTime(t7.Sub(t0)))            // total
 
 		printf(colorize(httpTemplate),
 			fmta(t1.Sub(t0)), // dns lookup
