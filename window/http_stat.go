@@ -1,8 +1,10 @@
 package window
 
 import (
+	"context"
 	"github.com/zzu-andrew/net_utils/network"
 	"net/url"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -86,7 +88,10 @@ func httpStat(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 			return
 		}
 
-		httpStat := network.HttpStat(uri)
+		ctx, cancel := context.WithTimeout(netUtils.ctx, time.Second*1)
+		defer cancel()
+
+		httpStat := network.HttpStat(ctx, uri, netUtils.status)
 		uriWidget.SetText(httpStat.Uri)
 		ConnectedToWidget.SetText(httpStat.Uri)
 		ConnectedViaWidget.SetText(httpStat.ConnectedVia)

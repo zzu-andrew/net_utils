@@ -5,7 +5,9 @@ import (
 	"crypto/tls"
 	"encoding/pem"
 	"fmt"
+	"fyne.io/fyne/v2/widget"
 	"github.com/fatih/color"
+	"github.com/golang/glog"
 	"io"
 	"io/ioutil"
 	"log"
@@ -107,7 +109,7 @@ type HttpStatInfo struct {
 }
 
 // HttpStat 获取http状态
-func HttpStat(strUri string) HttpStatInfo {
+func HttpStat(ctx context.Context, strUri string, status *widget.Label) HttpStatInfo {
 
 	httpStatInfo := HttpStatInfo{
 		Uri:  strUri,
@@ -116,7 +118,7 @@ func HttpStat(strUri string) HttpStatInfo {
 	// url解析
 	url := parseURL(strUri)
 
-	httpStatInfo.visit(url)
+	httpStatInfo.visit(ctx, url, status)
 
 	return httpStatInfo
 }
@@ -199,7 +201,8 @@ func dialContext(network string) func(ctx context.Context, network, addr string)
 
 // visit visits a url and times the interaction.
 // If the response is a 30x, visit follows the redirect.
-func (httpStatInfo *HttpStatInfo) visit(url *url.URL) {
+func (httpStatInfo *HttpStatInfo) visit(ctx context.Context, url *url.URL, status *widget.Label) {
+
 	req := newRequest(httpMethod, url, postBody)
 
 	var t0, t1, t2, t3, t4, t5, t6 time.Time
@@ -228,7 +231,6 @@ func (httpStatInfo *HttpStatInfo) visit(url *url.URL) {
 		TLSHandshakeDone:     func(_ tls.ConnectionState, _ error) { t6 = time.Now() },
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), time.Second*10)
 	req = req.WithContext(httptrace.WithClientTrace(ctx, trace))
 
 	tr := &http.Transport{
@@ -273,7 +275,9 @@ func (httpStatInfo *HttpStatInfo) visit(url *url.URL) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatalf("failed to read response: %v", err)
+		glog.Error("failed to read response: %v", err)
+		status.SetText(fmt.Sprintf("failed to read response: %v", err))
+		return
 	}
 
 	// Print SSL/TLS version which is used for connection
@@ -382,7 +386,7 @@ func (httpStatInfo *HttpStatInfo) visit(url *url.URL) {
 			fmtb(t7.Sub(t0)), // total
 		)
 	}
-
+	// 支持多重定向
 	if followRedirects && isRedirect(resp) {
 		loc, err := resp.Location()
 		if err != nil {
@@ -398,7 +402,7 @@ func (httpStatInfo *HttpStatInfo) visit(url *url.URL) {
 			log.Fatalf("maximum number of redirects (%d) followed", maxRedirects)
 		}
 
-		httpStatInfo.visit(loc)
+		httpStatInfo.visit(ctx, loc, status)
 	}
 }
 

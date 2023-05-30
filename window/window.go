@@ -10,6 +10,18 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+func (nu *NetUtils) NewStatusBar() *fyne.Container {
+	nu.status = widget.NewLabel("0")
+	nu.broadcast = widget.NewLabel("0")
+	return container.NewBorder(
+		nil,
+		nil,
+		nil,
+		container.NewHBox(widget.NewLabel("Broadcast: "), nu.broadcast),
+		container.NewHBox(widget.NewLabel("Status : "), nu.status),
+	)
+}
+
 func windowScreen(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	windowGroup := container.NewVBox(
 		widget.NewButton("New window", func() {
@@ -52,7 +64,7 @@ func windowScreen(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	otherGroup := widget.NewCard("Other", "",
 		widget.NewButton("Notification", func() {
 			fyne.CurrentApp().SendNotification(&fyne.Notification{
-				Title:   "Fyne Demo",
+				Title:   "net utils",
 				Content: "Testing notifications...",
 			})
 		}))
