@@ -10,7 +10,6 @@ import (
 	"github.com/golang/glog"
 	"io"
 	"io/ioutil"
-	"log"
 	"mime"
 	"net"
 	"net/http"
@@ -19,7 +18,6 @@ import (
 	"os"
 	"path"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -76,19 +74,6 @@ func grayscale(code color.Attribute) func(string, ...interface{}) string {
 	return color.New(code + 232).SprintfFunc()
 }
 
-/*
-fmta(t1.Sub(t0)), // dns lookup
-			fmta(t2.Sub(t1)), // tcp connection
-			fmta(t6.Sub(t5)), // tls handshake
-			fmta(t4.Sub(t3)), // server processing
-			fmta(t7.Sub(t4)), // content transfer
-			fmtb(t1.Sub(t0)), // namelookup
-			fmtb(t2.Sub(t0)), // connect
-			fmtb(t3.Sub(t0)), // pretransfer
-			fmtb(t4.Sub(t0)), // starttransfer
-			fmtb(t7.Sub(t0)), // total
-*/
-
 type HttpStatInfo struct {
 	Uri              string            `json:"Url"`
 	ConnectedTo      string            `json:"To"`
@@ -137,7 +122,7 @@ func readClientCert(filename string) []tls.Certificate {
 	// read client certificate file (must include client private key and certificate)
 	certFileBytes, err := ioutil.ReadFile(filename)
 	if err != nil {
-		log.Fatalf("failed to read client certificate file: %v", err)
+		glog.Error("failed to read client certificate file: %v", err)
 	}
 
 	for {
@@ -157,7 +142,7 @@ func readClientCert(filename string) []tls.Certificate {
 
 	cert, err := tls.X509KeyPair(certPem, pkeyPem)
 	if err != nil {
-		log.Fatalf("unable to load client cert and key pair: %v", err)
+		glog.Error("unable to load client cert and key pair: %v", err)
 	}
 	return []tls.Certificate{cert}
 }
@@ -169,7 +154,7 @@ func parseURL(uri string) *url.URL {
 
 	url, err := url.Parse(uri)
 	if err != nil {
-		log.Fatalf("could not parse url %q: %v", uri, err)
+		glog.Error("could not parse url %q: %v", uri, err)
 	}
 
 	if url.Scheme == "" {
@@ -184,7 +169,7 @@ func parseURL(uri string) *url.URL {
 func headerKeyValue(h string) (string, string) {
 	i := strings.Index(h, ":")
 	if i == -1 {
-		log.Fatalf("Header '%s' has invalid format, missing ':'", h)
+		glog.Error("Header '%s' has invalid format, missing ':'", h)
 	}
 	return strings.TrimRight(h[:i], " "), strings.TrimLeft(h[i:], " :")
 }
@@ -204,9 +189,8 @@ func dialContext(network string) func(ctx context.Context, network, addr string)
 func (httpStatInfo *HttpStatInfo) visit(ctx context.Context, url *url.URL, status *widget.Label) {
 
 	req := newRequest(httpMethod, url, postBody)
-
+	// 这里定义计算使用的时间点
 	var t0, t1, t2, t3, t4, t5, t6 time.Time
-
 	trace := &httptrace.ClientTrace{
 		DNSStart: func(_ httptrace.DNSStartInfo) { t0 = time.Now() },
 		DNSDone:  func(_ httptrace.DNSDoneInfo) { t1 = time.Now() },
@@ -218,7 +202,7 @@ func (httpStatInfo *HttpStatInfo) visit(ctx context.Context, url *url.URL, statu
 		},
 		ConnectDone: func(net, addr string, err error) {
 			if err != nil {
-				log.Fatalf("unable to connect to host %v: %v", addr, err)
+				glog.Error("unable to connect to host %v: %v", addr, err)
 			}
 			t2 = time.Now()
 
@@ -292,8 +276,6 @@ func (httpStatInfo *HttpStatInfo) visit(ctx context.Context, url *url.URL, statu
 	}
 
 	httpStatInfo.ConnectedVia = connectedVia
-	printf("\n%s %s\n", color.GreenString("Connected via"), color.CyanString("%s", connectedVia))
-
 	bodyMsg := readResponseBody(req, resp)
 	resp.Body.Close()
 
@@ -304,9 +286,6 @@ func (httpStatInfo *HttpStatInfo) visit(ctx context.Context, url *url.URL, statu
 	}
 
 	httpStatInfo.HttpInfo = fmt.Sprintf("%s%s%d.%d %s", "HTTP", "/", resp.ProtoMajor, resp.ProtoMinor, resp.Status)
-	// print status line and headers
-	printf("\n%s%s%s\n", color.GreenString("HTTP"), grayscale(14)("/"), color.CyanString("%d.%d %s", resp.ProtoMajor, resp.ProtoMinor, resp.Status))
-
 	names := make([]string, 0, len(resp.Header))
 	for k := range resp.Header {
 		names = append(names, k)
@@ -321,24 +300,9 @@ func (httpStatInfo *HttpStatInfo) visit(ctx context.Context, url *url.URL, statu
 		printf("\n%s\n", bodyMsg)
 	}
 
-	fmta := func(d time.Duration) string {
-		return color.CyanString("%7dms", int(d/time.Millisecond))
-	}
-
-	fmtb := func(d time.Duration) string {
-		return color.CyanString("%-9s", strconv.Itoa(int(d/time.Millisecond))+"ms")
-	}
-
 	fmtTime := func(d time.Duration) int {
 		return int(d / time.Millisecond)
 	}
-	colorize := func(s string) string {
-		v := strings.Split(s, "\n")
-		v[0] = grayscale(16)(v[0])
-		return strings.Join(v, "\n")
-	}
-
-	fmt.Println()
 
 	switch url.Scheme {
 	case "https":
@@ -352,18 +316,7 @@ func (httpStatInfo *HttpStatInfo) visit(ctx context.Context, url *url.URL, statu
 		httpStatInfo.Pretransfer = fmt.Sprintf("%d", fmtTime(t3.Sub(t0)))      // pretransfer
 		httpStatInfo.StartTransfer = fmt.Sprintf("%d", fmtTime(t4.Sub(t0)))    // starttransfer
 		httpStatInfo.Total = fmt.Sprintf("%d", fmtTime(t7.Sub(t0)))            // total
-		printf(colorize(httpsTemplate),
-			fmta(t1.Sub(t0)), // dns lookup
-			fmta(t2.Sub(t1)), // tcp connection
-			fmta(t6.Sub(t5)), // tls handshake
-			fmta(t4.Sub(t3)), // server processing
-			fmta(t7.Sub(t4)), // content transfer
-			fmtb(t1.Sub(t0)), // namelookup
-			fmtb(t2.Sub(t0)), // connect
-			fmtb(t3.Sub(t0)), // pretransfer
-			fmtb(t4.Sub(t0)), // starttransfer
-			fmtb(t7.Sub(t0)), // total
-		)
+
 	case "http":
 		httpStatInfo.DnsLookup = fmt.Sprintf("%d", fmtTime(t1.Sub(t0)))        // dns lookup
 		httpStatInfo.TcpConnection = fmt.Sprintf("%d", fmtTime(t3.Sub(t1)))    // tcp connection
@@ -375,16 +328,6 @@ func (httpStatInfo *HttpStatInfo) visit(ctx context.Context, url *url.URL, statu
 		httpStatInfo.StartTransfer = fmt.Sprintf("%d", fmtTime(t4.Sub(t0)))    // starttransfer
 		httpStatInfo.Total = fmt.Sprintf("%d", fmtTime(t7.Sub(t0)))            // total
 
-		printf(colorize(httpTemplate),
-			fmta(t1.Sub(t0)), // dns lookup
-			fmta(t3.Sub(t1)), // tcp connection
-			fmta(t4.Sub(t3)), // server processing
-			fmta(t7.Sub(t4)), // content transfer
-			fmtb(t1.Sub(t0)), // namelookup
-			fmtb(t3.Sub(t0)), // connect
-			fmtb(t4.Sub(t0)), // starttransfer
-			fmtb(t7.Sub(t0)), // total
-		)
 	}
 	// 支持多重定向
 	if followRedirects && isRedirect(resp) {
@@ -394,12 +337,12 @@ func (httpStatInfo *HttpStatInfo) visit(ctx context.Context, url *url.URL, statu
 				// 30x but no Location to follow, give up.
 				return
 			}
-			log.Fatalf("unable to follow redirect: %v", err)
+			glog.Error("unable to follow redirect: %v", err)
 		}
 
 		redirectsFollowed++
 		if redirectsFollowed > maxRedirects {
-			log.Fatalf("maximum number of redirects (%d) followed", maxRedirects)
+			glog.Error("maximum number of redirects (%d) followed", maxRedirects)
 		}
 
 		httpStatInfo.visit(ctx, loc, status)
@@ -413,7 +356,7 @@ func isRedirect(resp *http.Response) bool {
 func newRequest(method string, url *url.URL, body string) *http.Request {
 	req, err := http.NewRequest(method, url.String(), createBody(body))
 	if err != nil {
-		log.Fatalf("unable to create request: %v", err)
+		glog.Error("unable to create request: %v", err)
 	}
 	for _, h := range httpHeaders {
 		k, v := headerKeyValue(h)
@@ -431,7 +374,7 @@ func createBody(body string) io.Reader {
 		filename := body[1:]
 		f, err := os.Open(filename)
 		if err != nil {
-			log.Fatalf("failed to open data file %s: %v", filename, err)
+			glog.Error("failed to open data file %s: %v", filename, err)
 		}
 		return f
 	}
@@ -483,13 +426,13 @@ func readResponseBody(req *http.Request, resp *http.Response) string {
 			}
 
 			if filename == "/" {
-				log.Fatalf("No remote filename; specify output filename with -o to save response body")
+				glog.Error("No remote filename; specify output filename with -o to save response body")
 			}
 		}
 
 		f, err := os.Create(filename)
 		if err != nil {
-			log.Fatalf("unable to create file %s: %v", filename, err)
+			glog.Error("unable to create file %s: %v", filename, err)
 		}
 		defer f.Close()
 		w = f
@@ -497,7 +440,7 @@ func readResponseBody(req *http.Request, resp *http.Response) string {
 	}
 
 	if _, err := io.Copy(w, resp.Body); err != nil && w != ioutil.Discard {
-		log.Fatalf("failed to read response body: %v", err)
+		glog.Error("failed to read response body: %v", err)
 	}
 
 	return msg

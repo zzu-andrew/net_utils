@@ -2,8 +2,10 @@ package window
 
 import (
 	"context"
+	"fyne.io/fyne/v2/theme"
+	"github.com/golang/glog"
 	"github.com/zzu-andrew/net_utils/network"
-	"net/url"
+	"strconv"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -15,43 +17,6 @@ import (
  1. 每次从新获取uri
  2. 解析uri
  3. 将uri信息统计输出
-
-*/
-
-type HttpInfo struct {
-	uri string // 需要进行测试的地址，支持http https
-}
-
-func parseURLa(urlStr string) *url.URL {
-	link, err := url.Parse(urlStr)
-	if err != nil {
-		fyne.LogError("Could not parse URL", err)
-	}
-
-	return link
-}
-
-/*
-
-type HttpStatInfo struct {
-	Uri              string            `json:"Url"`
-	ConnectedTo      string            `json:"To"`
-	ConnectedVia     string            `json:"Via"`
-	HttpInfo         string            `json:"HttpInfo"`
-	Body             map[string]string `json:"Body"`
-	DnsLookup        string            `json:"DnsLookup"`
-	TcpConnection    string            `json:"TcpConnection"`
-	TlsHandshake     string            `json:"TlsHandshake"`
-	ServerProcessing string            `json:"ServerProcessing"`
-	ContentTransfer  string            `json:"ContentTransfer"`
-	NameLookup       string            `json:"NameLookup"`
-	Connect          string            `json:"Connect"`
-	Pretransfer      string            `json:"Pretransfer"`
-	StartTransfer    string            `json:"StartTransfer"`
-	Total            string            `json:"Total"`
-	BodyDiscarded    string            `json:"BodyDiscarded"`
-}
-
 */
 
 func httpStat(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
@@ -62,7 +27,6 @@ func httpStat(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 
 	uriWidget := widget.NewLabel("")
 	ConnectedToWidget := widget.NewLabel("")
-
 	ConnectedViaWidget := widget.NewLabel("")
 	HttpInfoWidget := widget.NewLabel("")
 	//BodyWidget := widget.NewLabel("")
@@ -81,17 +45,68 @@ func httpStat(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	entryUri := widget.NewEntry()
 	entryUri.SetPlaceHolder("https://www.baidu.com")
 
+	timeOut := widget.NewEntry()
+
+	timeOut.OnChanged = func(s string) {
+		if _, err := strconv.Atoi(s); err != nil {
+			glog.Error("Time out Entry string is invalid ", s)
+			return
+		}
+
+		timeOut.Text = s
+	}
+
+	timeOut.Text = "10"
+	addTimeButton := widget.NewButtonWithIcon("Add time(s)", theme.ContentAddIcon(), func() {
+		st := timeOut.Text
+		iTimeOut, err := strconv.Atoi(st)
+		if err != nil {
+			glog.Error("strconv.Atoi st failed.", err.Error())
+		}
+
+		iTimeOut += 1
+		timeOut.SetText(strconv.Itoa(iTimeOut))
+		timeOut.Refresh()
+	})
+	delTimeButton := widget.NewButtonWithIcon("Reduce time(s)", theme.ContentRemoveIcon(), func() {
+		st := timeOut.Text
+		iTimeOut, err := strconv.Atoi(st)
+		if err != nil || iTimeOut <= 0 {
+			glog.Error("strconv.Atoi st failed or timeOut is 0.", err.Error())
+		}
+		// 最低要求有1s的时间
+		if iTimeOut <= 1 {
+			return
+		}
+
+		iTimeOut -= 1
+		timeOut.SetText(strconv.Itoa(iTimeOut))
+		timeOut.Refresh()
+	})
+
 	button := widget.NewButton("Conn", func() {
 		uri := entryUri.Text
 
 		if len(uri) == 0 {
 			return
 		}
+		var t int
+		st := timeOut.Text
+		if len(st) == 0 {
+			glog.Info("timeOut is invalid set t = 10.")
+			t = 10
+		}
+		t, err := strconv.Atoi(st)
+		if err != nil {
+			glog.Error("strconv.Atoi st : ", st, " failed.")
+			t = 10
+		}
 
-		ctx, cancel := context.WithTimeout(netUtils.ctx, time.Second*1)
+		ctx, cancel := context.WithTimeout(netUtils.ctx, time.Second*time.Duration(t))
 		defer cancel()
 
 		httpStat := network.HttpStat(ctx, uri, netUtils.status)
+
 		uriWidget.SetText(httpStat.Uri)
 		ConnectedToWidget.SetText(httpStat.Uri)
 		ConnectedViaWidget.SetText(httpStat.ConnectedVia)
@@ -110,7 +125,10 @@ func httpStat(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 		BodyDiscardedWidget.SetText(httpStat.BodyDiscarded)
 
 	})
-	connectTool := container.NewHSplit(entryUri, button)
+
+	timeBox := container.NewHSplit(container.NewHBox(timeOut, addTimeButton, delTimeButton), entryUri)
+	timeBox.SetOffset(0.0)
+	connectTool := container.NewHSplit(timeBox, button)
 	// button 设置为最小
 	connectTool.SetOffset(1.0)
 	httpStatPadd := container.NewVSplit(
