@@ -5,6 +5,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/widget"
+	"github.com/zzu-andrew/net_utils/network"
 	"github.com/zzu-andrew/net_utils/resources"
 )
 
@@ -12,12 +13,13 @@ type UtilsData struct {
 }
 
 type NetUtils struct {
-	ctx         context.Context
-	app         fyne.App
-	win         fyne.Window
-	status      *widget.Label
-	broadcast   *widget.Label
-	httpStatObj fyne.CanvasObject
+	ctx          context.Context
+	app          fyne.App
+	win          fyne.Window
+	status       *widget.Label
+	broadcast    *widget.Label
+	httpStatObj  fyne.CanvasObject
+	httpStatInfo network.HttpStatInfo
 }
 
 func NewNetUtils() *NetUtils {

@@ -74,7 +74,13 @@ func grayscale(code color.Attribute) func(string, ...interface{}) string {
 	return color.New(code + 232).SprintfFunc()
 }
 
+const (
+	SchemeHttp  = 0
+	SchemeHttps = 1
+)
+
 type HttpStatInfo struct {
+	SchemeType       int               `json:"SchemeType"`
 	Uri              string            `json:"Url"`
 	ConnectedTo      string            `json:"To"`
 	ConnectedVia     string            `json:"Via"`
@@ -293,7 +299,6 @@ func (httpStatInfo *HttpStatInfo) visit(ctx context.Context, url *url.URL, statu
 	sort.Sort(headers(names))
 	for _, k := range names {
 		httpStatInfo.Body[k] = strings.Join(resp.Header[k], ",")
-		printf("%s %s\n", grayscale(14)(k+":"), color.CyanString(strings.Join(resp.Header[k], ",")))
 	}
 
 	if bodyMsg != "" {
@@ -306,6 +311,7 @@ func (httpStatInfo *HttpStatInfo) visit(ctx context.Context, url *url.URL, statu
 
 	switch url.Scheme {
 	case "https":
+		httpStatInfo.SchemeType = 1
 		httpStatInfo.DnsLookup = fmt.Sprintf("%d", fmtTime(t1.Sub(t0)))
 		httpStatInfo.TcpConnection = fmt.Sprintf("%d", fmtTime(t2.Sub(t1)))    // tcp connection
 		httpStatInfo.TlsHandshake = fmt.Sprintf("%d", fmtTime(t6.Sub(t5)))     // tls handshake
@@ -318,6 +324,7 @@ func (httpStatInfo *HttpStatInfo) visit(ctx context.Context, url *url.URL, statu
 		httpStatInfo.Total = fmt.Sprintf("%d", fmtTime(t7.Sub(t0)))            // total
 
 	case "http":
+		httpStatInfo.SchemeType = 0
 		httpStatInfo.DnsLookup = fmt.Sprintf("%d", fmtTime(t1.Sub(t0)))        // dns lookup
 		httpStatInfo.TcpConnection = fmt.Sprintf("%d", fmtTime(t3.Sub(t1)))    // tcp connection
 		httpStatInfo.ServerProcessing = fmt.Sprintf("%d", fmtTime(t4.Sub(t3))) // server processing

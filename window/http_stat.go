@@ -1,9 +1,17 @@
 package window
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"github.com/golang/glog"
+	"github.com/zzu-andrew/net_utils/clipboard"
+	"image"
+
+	"github.com/wcharczuk/go-chart/v2"
 	"github.com/zzu-andrew/net_utils/network"
 	"strconv"
 	"time"
@@ -105,24 +113,24 @@ func httpStat(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 		ctx, cancel := context.WithTimeout(netUtils.ctx, time.Second*time.Duration(t))
 		defer cancel()
 
-		httpStat := network.HttpStat(ctx, uri, netUtils.status)
+		netUtils.httpStatInfo = network.HttpStat(ctx, uri, netUtils.status)
 
-		uriWidget.SetText(httpStat.Uri)
-		ConnectedToWidget.SetText(httpStat.Uri)
-		ConnectedViaWidget.SetText(httpStat.ConnectedVia)
-		HttpInfoWidget.SetText(httpStat.HttpInfo)
+		uriWidget.SetText(netUtils.httpStatInfo.Uri)
+		ConnectedToWidget.SetText(netUtils.httpStatInfo.Uri)
+		ConnectedViaWidget.SetText(netUtils.httpStatInfo.ConnectedVia)
+		HttpInfoWidget.SetText(netUtils.httpStatInfo.HttpInfo)
 		//BodyWidget.SetText(httpStat.Body)
-		DnsLookupWidget.SetText(httpStat.DnsLookup)
-		TcpConnectionWidget.SetText(httpStat.TcpConnection)
-		TlsHandshakeWidget.SetText(httpStat.TlsHandshake)
-		ServerProcessingWidget.SetText(httpStat.ServerProcessing)
-		ContentTransferWidget.SetText(httpStat.ContentTransfer)
-		NameLookupWidget.SetText(httpStat.NameLookup)
-		ConnectWidget.SetText(httpStat.Connect)
-		PretransferWidget.SetText(httpStat.Pretransfer)
-		StartTransferWidget.SetText(httpStat.StartTransfer)
-		TotalWidget.SetText(httpStat.Total)
-		BodyDiscardedWidget.SetText(httpStat.BodyDiscarded)
+		DnsLookupWidget.SetText(netUtils.httpStatInfo.DnsLookup)
+		TcpConnectionWidget.SetText(netUtils.httpStatInfo.TcpConnection)
+		TlsHandshakeWidget.SetText(netUtils.httpStatInfo.TlsHandshake)
+		ServerProcessingWidget.SetText(netUtils.httpStatInfo.ServerProcessing)
+		ContentTransferWidget.SetText(netUtils.httpStatInfo.ContentTransfer)
+		NameLookupWidget.SetText(netUtils.httpStatInfo.NameLookup)
+		ConnectWidget.SetText(netUtils.httpStatInfo.Connect)
+		PretransferWidget.SetText(netUtils.httpStatInfo.Pretransfer)
+		StartTransferWidget.SetText(netUtils.httpStatInfo.StartTransfer)
+		TotalWidget.SetText(netUtils.httpStatInfo.Total)
+		BodyDiscardedWidget.SetText(netUtils.httpStatInfo.BodyDiscarded)
 
 	})
 
@@ -131,6 +139,7 @@ func httpStat(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 	connectTool := container.NewHSplit(timeBox, button)
 	// button 设置为最小
 	connectTool.SetOffset(1.0)
+
 	httpStatPadd := container.NewVSplit(
 		connectTool,
 		widget.NewForm(
@@ -152,7 +161,143 @@ func httpStat(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 		))
 	httpStatPadd.SetOffset(0.0)
 
-	netUtils.httpStatObj = container.NewPadded(httpStatPadd)
+	t := widget.NewToolbar(
+		widget.NewToolbarAction(theme.FileImageIcon(), func() {
+			fmt.Println("New")
+			showHttpStatImage(netUtils.win, &netUtils.httpStatInfo)
+		}),
+		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
+			fmt.Println("Copy")
+			copyHttpStatImageToClipboard(&netUtils.httpStatInfo)
+		}),
+		widget.NewToolbarSeparator(),
+		widget.NewToolbarSpacer(),
+		widget.NewToolbarAction(theme.ContentCutIcon(), func() { fmt.Println("Cut") }),
+
+		widget.NewToolbarAction(theme.ContentPasteIcon(), func() { fmt.Println("Paste") }),
+	)
+	netUtils.httpStatObj = container.NewBorder(t, nil, nil, nil, httpStatPadd)
 
 	return netUtils.httpStatObj
+}
+
+func showHttpStatImage(win fyne.Window, info *network.HttpStatInfo) {
+	// TODO: 支持展示多个网格形状图片
+
+	weChatImage := generatorHttpStatImage(info)
+	weChatContainer := container.NewScroll(weChatImage)
+
+	connectUsDialog := dialog.NewCustom("EtcdKeeperFyne", "Confirm",
+		weChatContainer,
+		win)
+
+	size := win.Canvas().Size()
+	size.Width = size.Width / 2
+	size.Height = size.Height / 3
+	connectUsDialog.Resize(size)
+	connectUsDialog.Show()
+}
+
+func copyHttpStatImageToClipboard(info *network.HttpStatInfo) {
+
+	buffer := generatorHttpStatPng(info)
+	img, _, err := image.Decode(buffer)
+	if err != nil {
+		glog.Error(err.Error())
+	}
+
+	clipboard.CopyImage(img)
+}
+
+func generatorHttpStatImage(info *network.HttpStatInfo) *canvas.Image {
+	return canvas.NewImageFromReader(generatorHttpStatPng(info), "")
+}
+
+const (
+	httpsTemplate = `` +
+		`  DNS Lookup   TCP Connection   TLS Handshake   Server Processing   Content Transfer` + "\n" +
+		`[%s  |     %s  |    %s  |        %s  |       %s  ]` + "\n" +
+		`            |                |               |                   |                  |` + "\n" +
+		`   namelookup:%s      |               |                   |                  |` + "\n" +
+		`                       connect:%s     |                   |                  |` + "\n" +
+		`                                   pretransfer:%s         |                  |` + "\n" +
+		`                                                     starttransfer:%s        |` + "\n" +
+		`                                                                                total:%s` + "\n"
+
+	httpTemplate = `` +
+		`   DNS Lookup   TCP Connection   Server Processing   Content Transfer` + "\n" +
+		`[ %s  |     %s  |        %s  |       %s  ]` + "\n" +
+		`             |                |                   |                  |` + "\n" +
+		`    namelookup:%s      |                   |                  |` + "\n" +
+		`                        connect:%s         |                  |` + "\n" +
+		`                                      starttransfer:%s        |` + "\n" +
+		`                                                                 total:%s` + "\n"
+)
+
+func generatorHttpStatPng(info *network.HttpStatInfo) *bytes.Buffer {
+
+	dnsTime, _ := strconv.Atoi(info.DnsLookup)
+	tcpConnTime, _ := strconv.Atoi(info.TcpConnection)
+	tlsTime, _ := strconv.Atoi(info.TlsHandshake)
+	serTime, _ := strconv.Atoi(info.ServerProcessing)
+	contentTransferTime, _ := strconv.Atoi(info.ContentTransfer)
+
+	var yValues1 []float64
+	if info.SchemeType == 1 {
+		yValues1 = append(yValues1, float64(dnsTime))
+		yValues1 = append(yValues1, float64(tcpConnTime))
+		yValues1 = append(yValues1, float64(tlsTime))
+		yValues1 = append(yValues1, float64(serTime))
+		yValues1 = append(yValues1, float64(contentTransferTime))
+
+	} else {
+
+	}
+
+	var xValues1 []float64
+	for i := 0; i < len(yValues1); i++ {
+		xValues1 = append(xValues1, float64(i+1))
+	}
+
+	ts1 := chart.ContinuousSeries{ //TimeSeries{
+		Style: chart.Style{
+			StrokeColor: chart.GetDefaultColor(2),
+		},
+		XValues: xValues1,
+		YValues: yValues1,
+	}
+
+	ts2 := chart.ContinuousSeries{ //TimeSeries{
+		Style: chart.Style{
+			StrokeColor: chart.GetDefaultColor(1),
+		},
+
+		XValues: xValues1,
+		YValues: yValues1,
+	}
+
+	graph := chart.Chart{
+
+		XAxis: chart.XAxis{
+			Name:           "The XAxis",
+			ValueFormatter: chart.IntValueFormatter,
+		},
+
+		YAxis: chart.YAxis{
+			Name:           "The YAxis",
+			ValueFormatter: chart.IntValueFormatter,
+		},
+
+		Series: []chart.Series{
+			ts1,
+			ts2,
+		},
+	}
+
+	buffer := bytes.NewBuffer([]byte{})
+	err := graph.Render(chart.PNG, buffer)
+	if err != nil {
+	}
+
+	return buffer
 }

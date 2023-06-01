@@ -7,10 +7,13 @@ require (
 	github.com/fatih/color v1.7.0
 	github.com/golang/glog v1.1.1
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e
+	github.com/wcharczuk/go-chart v2.0.1+incompatible
+	github.com/wcharczuk/go-chart/v2 v2.1.0
 )
 
 require (
 	fyne.io/systray v1.10.1-0.20230403195833-7dc3c09283d6 // indirect
+	github.com/blend/go-sdk v1.20220411.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fredbi/uri v0.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
@@ -22,6 +25,7 @@ require (
 	github.com/go-text/typesetting v0.0.0-20230405155246-bf9c697c6e16 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/goki/freetype v0.0.0-20220119013949-7a161fd3728c // indirect
+	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/jsummers/gobmp v0.0.0-20151104160322-e2ba15ffa76e // indirect
 	github.com/mattn/go-colorable v0.0.9 // indirect
