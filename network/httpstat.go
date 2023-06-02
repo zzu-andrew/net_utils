@@ -22,27 +22,6 @@ import (
 	"time"
 )
 
-const (
-	httpsTemplate = `` +
-		`  DNS Lookup   TCP Connection   TLS Handshake   Server Processing   Content Transfer` + "\n" +
-		`[%s  |     %s  |    %s  |        %s  |       %s  ]` + "\n" +
-		`            |                |               |                   |                  |` + "\n" +
-		`   namelookup:%s      |               |                   |                  |` + "\n" +
-		`                       connect:%s     |                   |                  |` + "\n" +
-		`                                   pretransfer:%s         |                  |` + "\n" +
-		`                                                     starttransfer:%s        |` + "\n" +
-		`                                                                                total:%s` + "\n"
-
-	httpTemplate = `` +
-		`   DNS Lookup   TCP Connection   Server Processing   Content Transfer` + "\n" +
-		`[ %s  |     %s  |        %s  |       %s  ]` + "\n" +
-		`             |                |                   |                  |` + "\n" +
-		`    namelookup:%s      |                   |                  |` + "\n" +
-		`                        connect:%s         |                  |` + "\n" +
-		`                                      starttransfer:%s        |` + "\n" +
-		`                                                                 total:%s` + "\n"
-)
-
 var (
 	// Command line flags.
 	httpMethod      string
@@ -65,14 +44,6 @@ var (
 )
 
 const maxRedirects = 10
-
-func printf(format string, a ...interface{}) (n int, err error) {
-	return fmt.Fprintf(color.Output, format, a...)
-}
-
-func grayscale(code color.Attribute) func(string, ...interface{}) string {
-	return color.New(code + 232).SprintfFunc()
-}
 
 const (
 	SchemeHttp  = 0
@@ -213,7 +184,6 @@ func (httpStatInfo *HttpStatInfo) visit(ctx context.Context, url *url.URL, statu
 			t2 = time.Now()
 
 			httpStatInfo.ConnectedTo = addr
-			printf("\n%s%s\n", color.GreenString("Connected to "), httpStatInfo.ConnectedTo)
 		},
 		GotConn:              func(_ httptrace.GotConnInfo) { t3 = time.Now() },
 		GotFirstResponseByte: func() { t4 = time.Now() },
@@ -282,7 +252,7 @@ func (httpStatInfo *HttpStatInfo) visit(ctx context.Context, url *url.URL, statu
 	}
 
 	httpStatInfo.ConnectedVia = connectedVia
-	bodyMsg := readResponseBody(req, resp)
+
 	resp.Body.Close()
 
 	t7 := time.Now() // after read body
@@ -299,10 +269,6 @@ func (httpStatInfo *HttpStatInfo) visit(ctx context.Context, url *url.URL, statu
 	sort.Sort(headers(names))
 	for _, k := range names {
 		httpStatInfo.Body[k] = strings.Join(resp.Header[k], ",")
-	}
-
-	if bodyMsg != "" {
-		printf("\n%s\n", bodyMsg)
 	}
 
 	fmtTime := func(d time.Duration) int {

@@ -3,16 +3,15 @@ package window
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"encoding/json"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"github.com/golang/glog"
-	"github.com/zzu-andrew/net_utils/clipboard"
-	"image"
-
 	"github.com/wcharczuk/go-chart/v2"
+	"github.com/zzu-andrew/net_utils/clipboard"
 	"github.com/zzu-andrew/net_utils/network"
+	"image"
 	"strconv"
 	"time"
 
@@ -92,6 +91,25 @@ func httpStat(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 		timeOut.Refresh()
 	})
 
+	updateForm := func() {
+		uriWidget.SetText(netUtils.httpStatInfo.Uri)
+		ConnectedToWidget.SetText(netUtils.httpStatInfo.Uri)
+		ConnectedViaWidget.SetText(netUtils.httpStatInfo.ConnectedVia)
+		HttpInfoWidget.SetText(netUtils.httpStatInfo.HttpInfo)
+		//BodyWidget.SetText(httpStat.Body)
+		DnsLookupWidget.SetText(netUtils.httpStatInfo.DnsLookup)
+		TcpConnectionWidget.SetText(netUtils.httpStatInfo.TcpConnection)
+		TlsHandshakeWidget.SetText(netUtils.httpStatInfo.TlsHandshake)
+		ServerProcessingWidget.SetText(netUtils.httpStatInfo.ServerProcessing)
+		ContentTransferWidget.SetText(netUtils.httpStatInfo.ContentTransfer)
+		NameLookupWidget.SetText(netUtils.httpStatInfo.NameLookup)
+		ConnectWidget.SetText(netUtils.httpStatInfo.Connect)
+		PretransferWidget.SetText(netUtils.httpStatInfo.Pretransfer)
+		StartTransferWidget.SetText(netUtils.httpStatInfo.StartTransfer)
+		TotalWidget.SetText(netUtils.httpStatInfo.Total)
+		BodyDiscardedWidget.SetText(netUtils.httpStatInfo.BodyDiscarded)
+	}
+
 	button := widget.NewButton("Conn", func() {
 		uri := entryUri.Text
 
@@ -114,24 +132,7 @@ func httpStat(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 		defer cancel()
 
 		netUtils.httpStatInfo = network.HttpStat(ctx, uri, netUtils.status)
-
-		uriWidget.SetText(netUtils.httpStatInfo.Uri)
-		ConnectedToWidget.SetText(netUtils.httpStatInfo.Uri)
-		ConnectedViaWidget.SetText(netUtils.httpStatInfo.ConnectedVia)
-		HttpInfoWidget.SetText(netUtils.httpStatInfo.HttpInfo)
-		//BodyWidget.SetText(httpStat.Body)
-		DnsLookupWidget.SetText(netUtils.httpStatInfo.DnsLookup)
-		TcpConnectionWidget.SetText(netUtils.httpStatInfo.TcpConnection)
-		TlsHandshakeWidget.SetText(netUtils.httpStatInfo.TlsHandshake)
-		ServerProcessingWidget.SetText(netUtils.httpStatInfo.ServerProcessing)
-		ContentTransferWidget.SetText(netUtils.httpStatInfo.ContentTransfer)
-		NameLookupWidget.SetText(netUtils.httpStatInfo.NameLookup)
-		ConnectWidget.SetText(netUtils.httpStatInfo.Connect)
-		PretransferWidget.SetText(netUtils.httpStatInfo.Pretransfer)
-		StartTransferWidget.SetText(netUtils.httpStatInfo.StartTransfer)
-		TotalWidget.SetText(netUtils.httpStatInfo.Total)
-		BodyDiscardedWidget.SetText(netUtils.httpStatInfo.BodyDiscarded)
-
+		updateForm()
 	})
 
 	timeBox := container.NewHSplit(container.NewHBox(timeOut, addTimeButton, delTimeButton), entryUri)
@@ -157,84 +158,54 @@ func httpStat(netUtils *NetUtils, _ fyne.Window) fyne.CanvasObject {
 			widget.NewFormItem("Pretransfer(ms) : ", PretransferWidget),
 			widget.NewFormItem("StartTransfer(ms) : ", StartTransferWidget),
 			widget.NewFormItem("Total(ms) : ", TotalWidget),
-			widget.NewFormItem("BodyDiscarded : ", BodyDiscardedWidget),
+			widget.NewFormItem("Body : ", BodyDiscardedWidget),
 		))
 	httpStatPadd.SetOffset(0.0)
 
 	t := widget.NewToolbar(
 		widget.NewToolbarAction(theme.FileImageIcon(), func() {
-			fmt.Println("New")
-			showHttpStatImage(netUtils.win, &netUtils.httpStatInfo)
+			img := generatorHttpStatPng(&netUtils.httpStatInfo)
+			if img == nil {
+				return
+			}
+			showHttpStatImage(netUtils.win, img)
+			clipboard.CopyImage(img)
 		}),
 		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
-			fmt.Println("Copy")
-			copyHttpStatImageToClipboard(&netUtils.httpStatInfo)
+			copyHttpStatInfoJson(&netUtils.httpStatInfo)
 		}),
 		widget.NewToolbarSeparator(),
 		widget.NewToolbarSpacer(),
-		widget.NewToolbarAction(theme.ContentCutIcon(), func() { fmt.Println("Cut") }),
-
-		widget.NewToolbarAction(theme.ContentPasteIcon(), func() { fmt.Println("Paste") }),
 	)
 	netUtils.httpStatObj = container.NewBorder(t, nil, nil, nil, httpStatPadd)
 
 	return netUtils.httpStatObj
 }
 
-func showHttpStatImage(win fyne.Window, info *network.HttpStatInfo) {
-	// TODO: 支持展示多个网格形状图片
+func showHttpStatImage(win fyne.Window, img image.Image) {
 
-	weChatImage := generatorHttpStatImage(info)
-	weChatContainer := container.NewScroll(weChatImage)
-
-	connectUsDialog := dialog.NewCustom("EtcdKeeperFyne", "Confirm",
-		weChatContainer,
+	connectUsDialog := dialog.NewCustom("HttpStat", "Confirm",
+		container.NewScroll(canvas.NewImageFromImage(img)),
 		win)
 
 	size := win.Canvas().Size()
-	size.Width = size.Width / 2
-	size.Height = size.Height / 3
+	size.Width = size.Width / 1.5
+	size.Height = size.Height / 2.5
 	connectUsDialog.Resize(size)
 	connectUsDialog.Show()
 }
 
-func copyHttpStatImageToClipboard(info *network.HttpStatInfo) {
+func copyHttpStatInfoJson(info *network.HttpStatInfo) {
 
-	buffer := generatorHttpStatPng(info)
-	img, _, err := image.Decode(buffer)
+	buff, err := json.Marshal(info)
 	if err != nil {
 		glog.Error(err.Error())
+		return
 	}
-
-	clipboard.CopyImage(img)
+	clipboard.CopyText(string(buff))
 }
 
-func generatorHttpStatImage(info *network.HttpStatInfo) *canvas.Image {
-	return canvas.NewImageFromReader(generatorHttpStatPng(info), "")
-}
-
-const (
-	httpsTemplate = `` +
-		`  DNS Lookup   TCP Connection   TLS Handshake   Server Processing   Content Transfer` + "\n" +
-		`[%s  |     %s  |    %s  |        %s  |       %s  ]` + "\n" +
-		`            |                |               |                   |                  |` + "\n" +
-		`   namelookup:%s      |               |                   |                  |` + "\n" +
-		`                       connect:%s     |                   |                  |` + "\n" +
-		`                                   pretransfer:%s         |                  |` + "\n" +
-		`                                                     starttransfer:%s        |` + "\n" +
-		`                                                                                total:%s` + "\n"
-
-	httpTemplate = `` +
-		`   DNS Lookup   TCP Connection   Server Processing   Content Transfer` + "\n" +
-		`[ %s  |     %s  |        %s  |       %s  ]` + "\n" +
-		`             |                |                   |                  |` + "\n" +
-		`    namelookup:%s      |                   |                  |` + "\n" +
-		`                        connect:%s         |                  |` + "\n" +
-		`                                      starttransfer:%s        |` + "\n" +
-		`                                                                 total:%s` + "\n"
-)
-
-func generatorHttpStatPng(info *network.HttpStatInfo) *bytes.Buffer {
+func generatorHttpStatPng(info *network.HttpStatInfo) image.Image {
 
 	dnsTime, _ := strconv.Atoi(info.DnsLookup)
 	tcpConnTime, _ := strconv.Atoi(info.TcpConnection)
@@ -242,24 +213,75 @@ func generatorHttpStatPng(info *network.HttpStatInfo) *bytes.Buffer {
 	serTime, _ := strconv.Atoi(info.ServerProcessing)
 	contentTransferTime, _ := strconv.Atoi(info.ContentTransfer)
 
-	var yValues1 []float64
-	if info.SchemeType == 1 {
-		yValues1 = append(yValues1, float64(dnsTime))
-		yValues1 = append(yValues1, float64(tcpConnTime))
-		yValues1 = append(yValues1, float64(tlsTime))
-		yValues1 = append(yValues1, float64(serTime))
-		yValues1 = append(yValues1, float64(contentTransferTime))
-
-	} else {
-
+	sumByIndex := func(xValue []float64, index int) float64 {
+		var sum float64
+		for i := 0; i < index; i++ {
+			sum += xValue[i]
+		}
+		return sum
 	}
 
-	var xValues1 []float64
-	for i := 0; i < len(yValues1); i++ {
-		xValues1 = append(xValues1, float64(i+1))
+	var xValues1, yValues2, yValues1 []float64
+	var httpsValue2, httpsValue2Total []chart.Value2
+	if info.SchemeType == network.SchemeHttps {
+
+		var lables = []string{"DNS Lookup", "TCP Connection", "TLS Handshake", "Server Processing", "Content Transfer"}
+
+		yValues1 = append(yValues1, float64(dnsTime))
+		xValues1 = append(xValues1, float64(1))
+		yValues1 = append(yValues1, float64(tcpConnTime))
+		xValues1 = append(xValues1, float64(2))
+		yValues1 = append(yValues1, float64(tlsTime))
+		xValues1 = append(xValues1, float64(3))
+		yValues1 = append(yValues1, float64(serTime))
+		xValues1 = append(xValues1, float64(4))
+		yValues1 = append(yValues1, float64(contentTransferTime))
+		xValues1 = append(xValues1, float64(5))
+
+		for i := 0; i < len(xValues1); i++ {
+			httpsValue2 = append(httpsValue2, chart.Value2{XValue: xValues1[i], YValue: yValues1[i], Label: lables[i]})
+		}
+
+		for i := 0; i < len(xValues1); i++ {
+			yValues2 = append(yValues2, sumByIndex(yValues1, i+1))
+		}
+
+		for i := 0; i < len(xValues1); i++ {
+			httpsValue2Total = append(httpsValue2Total, chart.Value2{XValue: xValues1[i], YValue: yValues2[i], Label: lables[i]})
+		}
+
+	} else {
+		var lables = []string{"DNS Lookup", "TCP Connection", "Server Processing", "Content Transfer"}
+
+		yValues1 = append(yValues1, float64(dnsTime))
+		xValues1 = append(xValues1, float64(1))
+		yValues1 = append(yValues1, float64(tcpConnTime))
+		xValues1 = append(xValues1, float64(2))
+		yValues1 = append(yValues1, float64(serTime))
+		xValues1 = append(xValues1, float64(3))
+		yValues1 = append(yValues1, float64(contentTransferTime))
+		xValues1 = append(xValues1, float64(4))
+
+		for i := 0; i < len(xValues1); i++ {
+			httpsValue2 = append(httpsValue2, chart.Value2{XValue: xValues1[i], YValue: yValues1[i], Label: lables[i]})
+		}
+
+		for i := 0; i < len(xValues1); i++ {
+			yValues2 = append(yValues2, sumByIndex(yValues1, i+1))
+		}
+
+		for i := 0; i < len(xValues1); i++ {
+			httpsValue2Total = append(httpsValue2Total, chart.Value2{XValue: xValues1[i], YValue: yValues2[i], Label: lables[i]})
+		}
+	}
+
+	if 0 == sumByIndex(yValues1, len(yValues1)) {
+		glog.Error("yValues1 is invalid, please conn first.")
+		return nil
 	}
 
 	ts1 := chart.ContinuousSeries{ //TimeSeries{
+		Name: "disperse",
 		Style: chart.Style{
 			StrokeColor: chart.GetDefaultColor(2),
 		},
@@ -268,30 +290,44 @@ func generatorHttpStatPng(info *network.HttpStatInfo) *bytes.Buffer {
 	}
 
 	ts2 := chart.ContinuousSeries{ //TimeSeries{
+		Name: "Total",
 		Style: chart.Style{
 			StrokeColor: chart.GetDefaultColor(1),
 		},
 
 		XValues: xValues1,
-		YValues: yValues1,
+		YValues: yValues2,
 	}
 
 	graph := chart.Chart{
-
+		Background: chart.Style{
+			Padding: chart.Box{
+				Top:  20,
+				Left: 20,
+			},
+		},
 		XAxis: chart.XAxis{
-			Name:           "The XAxis",
-			ValueFormatter: chart.IntValueFormatter,
+			Name: "The Index",
 		},
 
 		YAxis: chart.YAxis{
-			Name:           "The YAxis",
-			ValueFormatter: chart.IntValueFormatter,
+			Name: "The length of time (ms)",
 		},
 
 		Series: []chart.Series{
 			ts1,
 			ts2,
+			chart.AnnotationSeries{
+				Annotations: httpsValue2,
+			},
+			chart.AnnotationSeries{
+				Annotations: httpsValue2Total,
+			},
 		},
+	}
+	//note we have to do this as a separate step because we need a reference to graph
+	graph.Elements = []chart.Renderable{
+		chart.Legend(&graph),
 	}
 
 	buffer := bytes.NewBuffer([]byte{})
@@ -299,5 +335,10 @@ func generatorHttpStatPng(info *network.HttpStatInfo) *bytes.Buffer {
 	if err != nil {
 	}
 
-	return buffer
+	img, _, err := image.Decode(buffer)
+	if err != nil {
+		glog.Error(err.Error())
+	}
+
+	return img
 }
