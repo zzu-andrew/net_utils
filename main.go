@@ -18,17 +18,6 @@ func main() {
 	flag.Parse()
 	defer glog.Flush()
 
-	glog.Info("data")
-	glog.Info("data")
-	glog.Info("data")
-	glog.Info("data")
-	glog.Info("data")
-	glog.Info("data")
-	glog.Info("data")
-	glog.Info("data")
-	glog.Info("data")
-	glog.Info("data")
-
 	netUtils := window.NewNetUtils()
 
 	content := container.NewMax()
